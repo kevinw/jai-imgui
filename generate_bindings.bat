@@ -1,21 +1,26 @@
 @echo off
 setlocal
 
+set ROOT_DIR=%~dp0
+cd /D "%ROOT_DIR%"
+
 set n=^&echo.
 
-echo generating imgui_new.jai ... 
-python gen_mangle_map.py %* || exit /b
+echo generating Jai bindings ... 
+python generate_jai_wrapper.py %* || exit /b
 echo.
 
 echo building imgui_sizes.exe and example_null.exe ...
-jai run_test.jai || exit /b
+jai build.jai || exit /b
 echo.
 
 echo creating imgui_sizes.exe...
-cl imgui_sizes.cpp imgui.lib || exit /b
+cl imgui_sizes.cpp /Icimgui\imgui win\imgui.lib || exit /b
 echo.
 
 echo creating imgui_sizes.json...
+set PATH=%PATH%;%ROOT_DIR%win
+echo PATH is %PATH%
 imgui_sizes.exe > imgui_sizes.txt || exit /b
 echo.
 

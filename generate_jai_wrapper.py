@@ -1,16 +1,17 @@
 '''
-generate jai bindings for imgui
+Generates Jai bindings for imgui from the JSON emitted by the cimgui project.
 '''
 
-IMGUI_USE_WCHAR32 = False
-SKIP_INTERNAL = True
+OUTPUT_BINDINGS_JAI_FILE = "imgui.jai"
+PATH_TO_IMGUI_DLL  = "win\\imgui.dll"
+PATH_TO_CIMGUI     = "cimgui"
+IMGUI_USE_WCHAR32  = False
+SKIP_INTERNAL      = True
 STRIP_IMGUI_PREFIX = True # If True, this generator will remove 'ImGui' from the beginning of all identifiers.
                           # note that Im like in `ImVector` remains.
+
 allow_internal = frozenset(["ImDrawListSharedData"])
-skip_structs_for_size = frozenset([
-    "ImGuiTextRange",
-    "ImGuiStoragePair",
-])
+skip_structs_for_size = frozenset(["ImGuiTextRange", "ImGuiStoragePair"])
 
 import ast
 import json
@@ -29,7 +30,7 @@ functions_skipped = []
 stats = defaultdict(int)
 
 exports_file = "imgui_exports.txt"
-generator_output_dir = "../cimgui/generator/output/"
+generator_output_dir = f"{PATH_TO_CIMGUI}/generator/output/"
 
 jai_typedefs = dict(
     ImPoolIdx    = "s32",
@@ -79,7 +80,7 @@ else
 FLT_MAX :: 0h7F7FFFFF;
 
 #if OS == .WINDOWS
-    imgui_lib :: #foreign_library "imgui";
+    imgui_lib :: #foreign_library "win/imgui";
 else
     #assert(false);
 
@@ -94,6 +95,7 @@ export_line_regex = re.compile(r"(\d+)\s+([\da-fA-F]+)\s+([\da-fA-F]+)\s+([^ ]+)
 ctx = dict()
 
 type_replacements = [
+    ("char const* *", "**u8"),
     ("unsigned char**", "**u8"),
     ("char const*", "*u8"),
     ("const char*", "*u8"),
@@ -121,6 +123,11 @@ type_replacements = [
     ("ImS64", "s64"),
     ("ImU64", "u64"),
 ]
+
+def is_trivial_type_replacement(s):
+    for cpp, jai in type_replacements:
+        if cpp == s:
+            return jai
 
 def replace_types(s):
     for c_type, jai_type in type_replacements:
@@ -242,17 +249,28 @@ def get_jai_func_ptr(jai_type):
     # Plugin_Deinit_Func      :: #type (ctx: *Context, shutting_down: bool) -> *void #c_call;
 
     if not match:
-        assert False, jai_type
+        assert False, "did not match func ptr regex: " + jai_type
 
     ret_type, star, args_str = match.groups()
     assert star == "*"
 
     jai_args_string = ""
 
-    args_str_split = args_str.split(",")
+    args_str_split = split_args(args_str)
     for i, arg in enumerate(args_str_split):
-        arg_elems = arg.split(" ")
-        arg_type, arg_name = ' '.join(arg_elems[:-1]), arg_elems[-1]
+        jai_arg = is_trivial_type_replacement(arg)
+        if jai_arg is not None:
+            arg_type = jai_arg
+            arg_name = f"unnamed{i}"
+            
+        else:
+            elems = arg.rsplit(" ", 1)
+            if len(elems) == 1:
+                arg_type = elems[0]
+                arg_name = f"unnamed{i}"
+            else:
+                assert(len(elems) == 2)
+                arg_type, arg_name = elems
 
         arg_type = to_jai_type(arg_type)
 
@@ -266,7 +284,7 @@ def get_jai_func_ptr(jai_type):
         ret_type_with_arrow = ""
     else:
         ret_type_with_arrow = f" -> {ret_type}"
-
+    
     return f"({jai_args_string}){ret_type_with_arrow} #c_call"
 
 def handle_pointers(t):
@@ -315,7 +333,8 @@ def print_section(name):
 
 def get_windows_symbols(dll_filename):
     # use dumpbin to export all the symbols from imgui.dll
-    os.remove(exports_file)
+    if os.path.isfile(exports_file):
+        os.remove(exports_file)
     os.system(f"dumpbin /nologo /exports {dll_filename} > {exports_file}")
     assert(os.path.isfile(exports_file))
 
@@ -360,6 +379,40 @@ function_pattern = re.compile(r"""
 $
 """, re.VERBOSE)
 
+def split_args(args_str):
+    # a complicated example from 
+        # void __cdecl ImGui::SetAllocatorFunctions(void * (__cdecl*)(unsigned __int64,void *),void (__cdecl*)(void *,void *),void *)
+    # the arguments:
+        # void * (__cdecl*)(unsigned __int64,void *),void (__cdecl*)(void *,void *),void *
+
+    args_str = args_str.strip()
+
+    level = 0
+    start_index = 0
+    args = []
+    if not args_str:
+        return args
+
+    for i, ch in enumerate(args_str):
+        if ch == "(": level += 1
+        elif ch == ")": level -= 1
+        elif ch == "," and level == 0:
+            args.append(args_str[start_index:i])
+            start_index = i + 1
+
+    # the rest
+    args.append(args_str[start_index:])
+
+    return args
+
+assert(split_args("int foo,const char* bar") == ["int foo", "const char* bar"])
+assert(split_args("") == [])
+assert(split_args("void * (__cdecl*)(unsigned __int64,void *),void (__cdecl*)(void *,void *),void *") == [
+    "void * (__cdecl*)(unsigned __int64,void *)",
+    "void (__cdecl*)(void *,void *)",
+    "void *",
+])
+
 def group_symbols(symbols):
     missed_count = 0
 
@@ -387,7 +440,7 @@ def group_symbols(symbols):
         symbol_info.update(
             mangled = mangled,
             demangled = demangled,
-            args = [normalize_types(arg) for arg in symbol_info["args"].split(",")],
+            args = [normalize_types(arg) for arg in split_args(symbol_info["args"])],
             retval = normalize_types(symbol_info["retval"]),
         )
 
@@ -410,8 +463,16 @@ def normalize_types(cpp_type):
 
     return cpp_type
 
+fn_ptr_matcher = re.compile(r"\((?:__cdecl)?\*(?:\w+)?\)\s*\(")
+
+assert(fn_ptr_matcher.search("foo (*)(bar)"))
+assert(fn_ptr_matcher.search("foo(__cdecl*)(bar)"))
+assert(fn_ptr_matcher.search("*void(*alloc_func)(int bar)"))
+
 def to_jai_type(cpp_type_string):
-    if "(*)" in cpp_type_string:
+    cpp_type_string = cpp_type_string.replace("__cdecl", "") # TODO: probably shouldn't just erase this fact...
+
+    if fn_ptr_matcher.search(cpp_type_string):
         return get_jai_func_ptr(cpp_type_string)
 
     cpp_type_string = cpp_type_string.replace("char const*", "u8*")
@@ -477,10 +538,29 @@ def jai_types_equivalent(enums, a, b):
     while starts_with_pointer_or_array(a) and starts_with_pointer_or_array(b):
         a, b = strip_pointer_or_array(a), strip_pointer_or_array(b)
 
+    arg_name_re = r"(\w+: )"
+
+    # remove the argument names for our comparison if they are function pointers
+    # TODO: this is silly. we already know if they are function pointers somewhere
+    # above this code, because we did the conversion.
+    did_find_func_ptr_a = False
+    did_find_func_ptr_b = False
+    if "->" in a or "#c_call" in a:
+        did_find_func_ptr_a = True
+        a = re.sub(arg_name_re, "", a)
+    if "->" in b or "#c_call" in b:
+        did_find_func_ptr_b = True
+        b = re.sub(arg_name_re, "", b)
+
     if a == b:
         return True, None
 
+    if did_find_func_ptr_a and did_find_func_ptr_b:
+        print("~~~~mismatched fn ptrs:\n", a, "\n", b)
+
     def is_enum(a):
+        if enums is None: return False
+
         # TODO: this is hacky and bad. we need to store the original c name
         return a in enums or (a + "_") in enums or ("ImGui" + a + "_") in enums
 
@@ -539,7 +619,7 @@ def load_structs_and_enums():
 ArgInfo = namedtuple("ArgInfo", "name jai_arg_type default_str wrapper_arg_type call_arg_value")
 
 def get_jai_args(structs_and_enums, func_entry):
-    orig_args = func_entry["argsoriginal"].split(",")
+    orig_args = split_args(func_entry["argsoriginal"])
     arg_infos = []
     needs_defaults_wrapper = False
     for i, arg in enumerate(func_entry["argsT"]):
@@ -618,7 +698,11 @@ def get_jai_args(structs_and_enums, func_entry):
 
 def main():
     # get symbols from windows dll
-    symbols = get_windows_symbols("imgui.dll")
+    if not os.path.isfile(PATH_TO_IMGUI_DLL):
+        print("error - expected file to exist: " + PATH_TO_IMGUI_DLL, file=sys.stderr)
+        sys.exit(1)
+
+    symbols = get_windows_symbols(PATH_TO_IMGUI_DLL)
     if len(symbols) == 0:
         sys.exit(1)
 
@@ -628,7 +712,7 @@ def main():
     # parse the structs/enums JSON
     structs_and_enums = load_structs_and_enums()
 
-    ctx["output_file"] = open("imgui_new.jai", "w")
+    ctx["output_file"] = open(OUTPUT_BINDINGS_JAI_FILE, "w")
     size_tester_file = open("imgui_sizes.cpp", "w")
 
     def p_sizer(*a, **k):
@@ -934,6 +1018,18 @@ def print_enum_sizes():
             
 
 assert to_jai_type("const char*") == "*u8", "uhoh: " + to_jai_type("const_char*")
+
+def test_get_jai_func_ptr():
+    cpp_func = "bool (*)(void*,int,char const* *)"
+    expected_jai_func = "(unnamed0: *void, unnamed1: s32, unnamed2: **u8) -> bool #c_call"
+    res = get_jai_func_ptr(cpp_func)
+    assert res == expected_jai_func,\
+        "for: {}\nexpected: {}\nbut got:  {}".format(cpp_func, expected_jai_func, res)
+
+
+test_get_jai_func_ptr()
+
+
 if __name__ == "__main__":
     #if len(sys.argv) > 0 and sys.argv[1] == "enumsizes":
         #print_enum_sizes()
