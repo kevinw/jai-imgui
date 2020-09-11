@@ -37,6 +37,7 @@ build :: () {
 
     build_file("example_null.jai", output_executable_name="example_null");
     build_file("test_sizes.jai", output_executable_name="test_sizes");
+    build_file("imgui_opengl_test.jai", output_executable_name="imgui_opengl_test");
 
     print("built.\n");
 }

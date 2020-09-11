@@ -43,6 +43,8 @@ jai_typedefs = dict(
 jai_typedefs_str = "\n".join(f"{key} :: {value};" for key, value in jai_typedefs.items())
 
 extra_code = """
+Context :: struct { data: *void; }
+
 ImVector :: struct(T: Type) {
     Size:     s32;
     Capacity: s32;
@@ -74,6 +76,13 @@ IMGUI_USE_WCHAR32 :: <IMGUI_USE_WCHAR32>; // TODO: Module parameter
     ImWchar :: ImWchar32;
 else
     ImWchar :: ImWchar16;
+
+make_ImVec2 :: inline (a: float, b: float) -> ImVec2 {
+    v: ImVec2 = ---;
+    v.x = a;
+    v.y = b;
+    return v;
+}
 
 #scope_file
 
@@ -861,7 +870,7 @@ int main(int argc, char** argv) {
             jai_function_line = (jai_func_name, function_definition)
 
             if stname is not None:
-                struct_functions[stname].append(jai_function_line);
+                struct_functions[strip_im_prefixes(stname)].append(jai_function_line);
             else:
                 global_functions.append(jai_function_line)
                 stats["printed_functions"] += 1
