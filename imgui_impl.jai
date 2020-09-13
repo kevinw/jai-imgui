@@ -37,6 +37,9 @@ _render_ui_state: *UI_State;
 
 ImGui_Impl_CreateContext :: (using ui_state: *UI_State) {
     ctx = ImGui.CreateContext();
+
+    io := ImGui.GetIO();
+    io.ConfigFlags_ |= .DockingEnable;
 }
 
 

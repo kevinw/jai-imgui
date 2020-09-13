@@ -45,7 +45,7 @@ get_window_size :: (window: Window_Type) -> s32, s32 {
 
     hook: HHOOK;
 
-    setup_hook :: () {
+    setup_mousemove_hook :: () {
         if SetWindowsHookExA(WH_MOUSE, HookProc, null, GetCurrentThreadId()) == null {
             print("SetWindowsHookExA error: %\n", GetLastError());
             assert(false);
@@ -56,6 +56,8 @@ get_window_size :: (window: Window_Type) -> s32, s32 {
 manual_redraws := 2;
 
 frame :: (window: Window_Type) -> did_render: bool {
+    need_to_render := false;
+
     for events_this_frame {
         need_to_render |= ImGui_Impl_ProcessEvent(*state.ui, it);
         if it.type == {
@@ -82,8 +84,8 @@ render :: (window: Window_Type) {
     w, h := get_window_size(window);
 
     ImGui_Impl_NewFrame(*state.ui, window, w, h);
-    if demo_window_open
-        ImGui.ShowDemoWindow(*demo_window_open);
+    if state.demo_window_open
+        ImGui.ShowDemoWindow(*state.demo_window_open);
     ImGui.Render();
 
     glViewport(0, 0, xx w, xx h);
@@ -93,8 +95,9 @@ render :: (window: Window_Type) {
 }
 
 main :: () {
-    window := create_window(800, 450, "ImGui OpenGL Test");
-    setup_hook();
+    window := create_window(1200, 800, "ImGui OpenGL Test");
+    setup_mousemove_hook();
+
     gl_create_context(window, 3, 2);
     gl_load(*gl);
 
