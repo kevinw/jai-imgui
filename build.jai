@@ -35,9 +35,17 @@ build :: () {
     opts.output_type = .NO_OUTPUT;
     set_build_options(opts);
 
-    build_file("example_null.jai", output_executable_name="example_null");
-    build_file("test_sizes.jai", output_executable_name="test_sizes");
+    build_only_opengl := false;
+    for compiler_get_command_line_arguments() 
+        if it == "opengl"
+            build_only_opengl = true;
+
     build_file("imgui_opengl_test.jai", output_executable_name="imgui_opengl_test");
+
+    if !build_only_opengl  {
+        build_file("example_null.jai", output_executable_name="example_null");
+        build_file("test_sizes.jai", output_executable_name="test_sizes");
+    }
 
     print("built.\n");
 }

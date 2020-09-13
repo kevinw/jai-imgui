@@ -1,4 +1,5 @@
 .build/
+.vs/
 *.pdb
 *.obj
 *.exe
@@ -6,3 +7,4 @@ imgui_exports.txt
 imgui_sizes.txt
 imgui_sizes.cpp
 imgui.ini
+stats.txt

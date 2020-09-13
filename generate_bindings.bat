@@ -10,6 +10,8 @@ echo generating Jai bindings ...
 python generate_jai_wrapper.py %* || exit /b
 echo.
 
+type stats.txt
+
 echo building imgui_sizes.exe and example_null.exe ...
 jai build.jai || exit /b
 echo.

@@ -1,17 +1,8 @@
 '''
+
 Generates Jai bindings for imgui from the JSON emitted by the cimgui project.
+
 '''
-
-OUTPUT_BINDINGS_JAI_FILE = "imgui.jai"
-PATH_TO_IMGUI_DLL  = "win\\imgui.dll"
-PATH_TO_CIMGUI     = "cimgui"
-IMGUI_USE_WCHAR32  = False
-SKIP_INTERNAL      = True
-STRIP_IMGUI_PREFIX = True # If True, this generator will remove 'ImGui' from the beginning of all identifiers.
-                          # note that Im like in `ImVector` remains.
-
-allow_internal = frozenset(["ImDrawListSharedData"])
-skip_structs_for_size = frozenset(["ImGuiTextRange", "ImGuiStoragePair"])
 
 import ast
 import json
@@ -25,12 +16,53 @@ import traceback
 from collections import defaultdict, namedtuple
 from pprint import pformat, pprint
 
-inline_functions_skipped = []
-functions_skipped = []
-stats = defaultdict(int)
+OUTPUT_BINDINGS_JAI_FILE = "imgui.jai"
+PATH_TO_IMGUI_DLL        = "win\\imgui.dll"
+PATH_TO_CIMGUI           = "cimgui"
+IMGUI_USE_WCHAR32        = False
+SKIP_INTERNAL            = True
+SKIP_PRIVATE_ENUMS       = True
+STRIP_IMGUI_PREFIX       = True # If True, this generator will remove 'ImGui' from the beginning of all identifiers.
+                                # note that Im like in `ImVector` remains.
+ENUM_TYPE = "s32"               # all imgui enums are c ints
+
+allow_internal = frozenset(["ImDrawListSharedData"])
+skip_structs_for_size = frozenset(["ImGuiTextRange", "ImGuiStoragePair"])
+diagnose_funcnames = frozenset(sys.argv[1:]) # pass additional args on the commandline to print extra info for structs or functions which are missing
 
 exports_file = "imgui_exports.txt"
-generator_output_dir = f"{PATH_TO_CIMGUI}/generator/output/"
+
+ArgInfo = namedtuple("ArgInfo", "name jai_arg_type default_str wrapper_arg_type call_arg_value meta")
+
+# a regex for function pointers
+fn_ptr_matcher = re.compile(r"(.+)\((?:__cdecl)?\*(\w+)?\)\s*\(([^\)]*)\)")
+
+assert fn_ptr_matcher.match("foo (*)(bar)")
+assert fn_ptr_matcher.match("foo(__cdecl*)(bar)")
+assert fn_ptr_matcher.match("*void(*alloc_func)(int bar)")
+assert fn_ptr_matcher.match("bool(*items_getter)(void* data,int idx,const char** out_text)")
+
+# a regex for extracting DLL symbol names from the output of the Microsoft
+# Visual Studio command line tool dumpbin.exe
+export_line_regex = re.compile(r"(\d+)\s+([\da-fA-F]+)\s+([\da-fA-F]+)\s+([^ ]+) = ([^ ]+) \((.*)\)$")
+
+# for extracting the array size from a field type like "TempBuffer[1024*3+1]"
+arr_part_re = re.compile(r"(\w+)(?:\[([^\]]+)\])?")
+
+# parses windows demangled symbol names from dumpbin.exe /exports
+function_pattern = re.compile(r"""
+^                                       # beginning of the string
+(?:(?P<visibility>\w+):\ )?             # visibility like "public: "
+(?P<retval>.*)                          # return value
+(?:\ __cdecl\ )                         # calling convention
+(?:(?P<nspace_or_stname>[\w\<\> ]+)::)? # namespace or struct name
+(?P<fname>[\w\<\>~=\+\-\\\* ]+)         # function name
+\(                                      # arguments in parentheses
+    (?P<args>.*)
+\)
+(?P<const>const)?
+$
+""", re.VERBOSE)
 
 jai_typedefs = dict(
     ImPoolIdx    = "s32",
@@ -40,7 +72,10 @@ jai_typedefs = dict(
     ImGuiID      = "u32",
     ID           = "u32", # TODO: don't repeat ID like this
 )
-jai_typedefs_str = "\n".join(f"{key} :: {value};" for key, value in jai_typedefs.items())
+def load_structs_and_enums():
+    return json.load(open(f"{PATH_TO_CIMGUI}/generator/output/structs_and_enums.json", "r"))
+def load_definitions():
+    return json.load(open(f"{PATH_TO_CIMGUI}/generator/output/definitions.json", "r"))
 
 extra_code = """
 Context :: struct { data: *void; }
@@ -95,12 +130,11 @@ else
 
 """.replace("ImGui", "" if STRIP_IMGUI_PREFIX else "ImGui")\
    .replace("<IMGUI_USE_WCHAR32>", "true" if IMGUI_USE_WCHAR32 else "false")\
-   .replace("<type_definitions>", jai_typedefs_str)
+   .replace("<type_definitions>", "\n".join(f"{key} :: {value};" for key, value in jai_typedefs.items()))
 
-# a regex for extracting DLL symbol names from the output of the Microsoft
-# Visual Studio command line tool dumpbin.exe
-export_line_regex = re.compile(r"(\d+)\s+([\da-fA-F]+)\s+([\da-fA-F]+)\s+([^ ]+) = ([^ ]+) \((.*)\)$")
-
+inline_functions_skipped = []
+functions_skipped = []
+stats = defaultdict(int)
 ctx = dict()
 
 type_replacements = [
@@ -172,9 +206,6 @@ def eval_(node):
         return operators[type(node.op)](eval_(node.operand))
     else:
         raise TypeError(node)
-
-# for extracting the array size from a field type like "TempBuffer[1024*3+1]"
-arr_part_re = re.compile(r"(\w+)(?:\[([^\]]+)\])?")
 
 def size_of_type(type):
     if type == "bool": return 32;
@@ -334,7 +365,8 @@ def p_aligned(row_tuples, prefix=''):
 
     for row in row_tuples:
         for column, elem in enumerate(row):
-            p(prefix + elem.ljust(max_columns[column]), end="")
+            justified = elem.ljust(max_columns[column]) if column < len(row)-1 else elem
+            p(prefix + justified, end="")
         p("", end="\n") # newline
             
 def print_section(name):
@@ -353,7 +385,7 @@ def get_windows_symbols(dll_filename):
     for line in open(exports_file, "r"):
         line = line.strip()
         if not line: continue
-        if not started and line.strip().startswith("ordinal"):
+        if not started and line.startswith("ordinal"):
             # find the first line describing exports
             started = True
 
@@ -369,24 +401,6 @@ def get_windows_symbols(dll_filename):
     return symbols
 
 SymbolEntry = namedtuple("SymbolEntry", 'ordinal hint rva name1 name2 demangled')
-
-# struct ImGuiContext * GImGui
-# struct ImGuiContext * __cdecl ImGui::CreateContext(struct ImFontAtlas *)
-
-# parses windows demangled symbol names from dumpbin.exe /exports
-function_pattern = re.compile(r"""
-^                                       # beginning of the string
-(?:(?P<visibility>\w+):\ )?             # visibility like "public: "
-(?P<retval>.*)                          # return value
-(?:\ __cdecl\ )                         # calling convention
-(?:(?P<nspace_or_stname>[\w\<\> ]+)::)? # namespace or struct name
-(?P<fname>[\w\<\>~=\+\-\\\* ]+)         # function name
-\(                                      # arguments in parentheses
-    (?P<args>.*)
-\)
-(?P<const>const)?
-$
-""", re.VERBOSE)
 
 def split_args(args_str):
     # a complicated example from 
@@ -472,24 +486,40 @@ def normalize_types(cpp_type):
 
     return cpp_type
 
-fn_ptr_matcher = re.compile(r"\((?:__cdecl)?\*(?:\w+)?\)\s*\(")
+def to_jai_func_ptr(desc):
+    assert desc.get("func", False)
+    args = ", ".join(
+            f"{a['name']}: {to_jai_type(a['type'])}"
+            for a in desc["args"])
 
-assert(fn_ptr_matcher.search("foo (*)(bar)"))
-assert(fn_ptr_matcher.search("foo(__cdecl*)(bar)"))
-assert(fn_ptr_matcher.search("*void(*alloc_func)(int bar)"))
+    ret_with_arrow = ""
+    retval = desc.get("retval", "void")
+    if retval != "void":
+        ret_with_arrow = f" -> {to_jai_type(retval)}"
+
+    return f"({args}){ret_with_arrow} #c_call"
 
 def to_jai_type(cpp_type_string):
+    if cpp_type_string == "...":
+        return "..Any"
+
+    if isinstance(cpp_type_string, dict):
+        assert cpp_type_string.get("func")
+        return to_jai_func_ptr(cpp_type_string)
+
+    assert isinstance(cpp_type_string, str), "expected a string, got: " + str(cpp_type_string)
     cpp_type_string = cpp_type_string.replace("__cdecl", "") # TODO: probably shouldn't just erase this fact...
 
     if fn_ptr_matcher.search(cpp_type_string):
         return get_jai_func_ptr(cpp_type_string)
 
-    cpp_type_string = cpp_type_string.replace("char const*", "u8*")
-    cpp_type_string = cpp_type_string.replace("const char*", "u8*")
-    cpp_type_string = cpp_type_string.replace("const char *", "u8*")
+    cpp_type_string = cpp_type_string\
+        .replace("char const*", "u8*")\
+        .replace("const char*", "u8*")\
+        .replace("const char *", "u8*")\
+        .replace("const ", "")\
+        .replace(" const", "")
 
-    cpp_type_string = cpp_type_string.replace("const ", "")
-    cpp_type_string = cpp_type_string.replace(" const", "")
     cpp_type_string = handle_pointers(strip_im_prefixes(replace_types(cpp_type_string)))
 
     # in jai we put the array part first
@@ -498,6 +528,7 @@ def to_jai_type(cpp_type_string):
         identifier, array_size = match.groups()
         cpp_type_string = f"[{array_size}]{identifier}"
 
+    assert isinstance(cpp_type_string, str)
     return cpp_type_string
 
 def all_jai_types_equivalent(enums, zipped_types):
@@ -510,6 +541,14 @@ def all_jai_types_equivalent(enums, zipped_types):
         idx += 1
     
     return True, None, -1
+
+def strip_pointer_or_array(s):
+    if s.startswith("*"): return s[1:]
+
+    bracket_idx = s.index("]")
+    assert bracket_idx != -1
+    return s[bracket_idx + 1:]
+
 
 def jai_types_equivalent(enums, a, b):
     a = a.strip()
@@ -535,13 +574,6 @@ def jai_types_equivalent(enums, a, b):
         if s.startswith("*"): return True
         if re.match("^\[(?:\d+)?\]", s): return True
         return False
-
-    def strip_pointer_or_array(s):
-        if s.startswith("*"): return s[1:]
-
-        bracket_idx = s.index("]")
-        assert bracket_idx != -1
-        return s[bracket_idx + 1:]
 
 
     while starts_with_pointer_or_array(a) and starts_with_pointer_or_array(b):
@@ -622,98 +654,171 @@ def get_enum_name(enums, jai_enum_name, value):
     
     return None
 
-def load_structs_and_enums():
-    return json.load(open(generator_output_dir + "structs_and_enums.json", "r"))
+def make_jai_default_arg(structs_and_enums, optional_default, arg_type):
+    info = {}
 
-ArgInfo = namedtuple("ArgInfo", "name jai_arg_type default_str wrapper_arg_type call_arg_value")
+    if not optional_default:
+        return None, info
+
+    if optional_default == "((void*)0)":
+        return "null", info
+
+    # TODO: check argtype and probably don't use a regex here.
+    # do try: float() except ValueError: instead.
+    float_match = re.match(r"[+-]?(\d+\.\d+)f", optional_default)
+    if float_match is not None:
+        # In jai, floating point values do not end with f -- the compiler
+        # figures out which type the constant should be for us.
+        return float_match.group(1), info
+
+    # hack: also strip f for scientific notation. this should be merged
+    # with the code above.
+    if re.match(r".*e[+-]\d+[Ff]$", optional_default):
+        return optional_default[:-1], info
+
+    if optional_default == "0.0":
+        return "0", info
+
+    # TODO: make this kind of cast more general
+    optional_default = optional_default.replace("(ImU32)", "cast(u32)")
+
+    constructor_match = re.match(r"^(\w+)\((.*)\)$", optional_default)
+    if constructor_match is not None:
+        constructor_name, args = constructor_match.groups()
+        if constructor_name == "sizeof":
+            optional_default = "size_of(" + args + ")"
+        else:
+            optional_default = constructor_name + ".{" + args + "}"
+            info['was_constructor'] = True
+
+    enum_name = get_enum_name(structs_and_enums["enums"], arg_type, optional_default)
+    if enum_name is not None:
+        optional_default = f".{enum_name}"
+
+    optional_default = convert_enum_default(structs_and_enums["enums"], optional_default)
+
+    return optional_default, info
+
+def parse_arg(c_arg_decl, arg_index):
+    assert isinstance(c_arg_decl, str), "expected a string, got: " + str(c_arg_decl)
+    assert not c_arg_decl.startswith("("), "didn't expect to start with a paren: " + c_arg_decl
+
+    if c_arg_decl == "...":
+        return dict(name="args", type="..Any", jai_type="..Any", default=None)
+
+    assert c_arg_decl.count("=") <= 1
+    elems = c_arg_decl.split("=")
+    if len(elems) == 1:
+        # no default argument
+        arg_decl, default_arg = elems[0], None
+    elif len(elems) == 2:
+        arg_decl, default_arg = elems
+        # a default argument
+
+    fn_match = fn_ptr_matcher.match(arg_decl)
+    if fn_match:
+        ret_val, fn_name, fn_args = fn_match.groups()
+        return dict(
+            name=fn_name,
+            type=dict(
+                func=True,
+                retval=ret_val,
+                args=[parse_arg(a, idx) for idx, a in enumerate(split_args(fn_args))],
+                default=default_arg)
+        )
+    else:
+        space_elems = arg_decl.rsplit(' ', 1)
+        if len(space_elems) == 1:
+            arg_type, arg_name = space_elems[0], f"unnamed{arg_index}"
+        else:
+            arg_type, arg_name = space_elems
+
+        match = re.match(r"(.*)(\[(?:\d+)?\])", arg_name)
+        if match:
+            arg_name, arr_part = match.groups()
+            arg_type = f"{arr_part}{arg_type}"
+        return dict(
+            name=arg_name,
+            type=arg_type,
+            jai_type=to_jai_type(arg_type),
+            default=default_arg)
 
 def get_jai_args(structs_and_enums, func_entry):
-    orig_args = split_args(func_entry["argsoriginal"])
-    arg_infos = []
+    parsed_arg_infos = []
+    for i, orig_arg in enumerate(split_args(func_entry["argsoriginal"][1:-1])):
+        parsed_arg_infos.append(parse_arg(orig_arg, i))
+
+    argsT = func_entry["argsT"]
+
+    if len(argsT) >= 1 and argsT[0]["name"] == "pOut":
+        argsT.pop(0) # remove pOut arg--its only used by generated cimgui
+
+    # insert another argument at the beginning if we have a self
+    if len(argsT) >= 1 and argsT[0]["name"] == "self":
+        assert len(argsT) == len(parsed_arg_infos) + 1
+        parsed_arg_infos.insert(0, dict(name="self", type=argsT[0]['type'], jai_type=to_jai_type(argsT[0]['type'])))
+
+    assert len(argsT) == len(parsed_arg_infos), pformat((argsT, parsed_arg_infos))
+
     needs_defaults_wrapper = False
-    for i, arg in enumerate(func_entry["argsT"]):
-        name     = arg["name"]
-        arg_type = arg["type"]
+    arg_infos = []
+    for i, arg in enumerate(argsT):
+        parsed_arg = parsed_arg_infos[i]
+        name, arg_type = arg["name"], arg["type"]
+
+        # "argsoriginal": "(ImGuiID id,const ImVec2& size=ImVec2(0,0),ImGuiDockNodeFlags flags=0,const ImGuiWindowClass* window_class=((void*)0))",
+        # "argsoriginal": "(const char* label,int* current_item,bool(*items_getter)(void* data,int idx,const char** out_text),void* data,int items_count,int height_in_items=-1)",
+        # can check "signature" in argsT entry
+
+        jai_arg_type = to_jai_type(parsed_arg_infos[i]["type"])
 
         if name == "...":
-            assert arg_type == "..."
             name = "args"
-            arg_type = "..Any"
 
-        default_str = ""
-        if func_entry["defaults"] == []:
-            # definitions.json has [] for the defualts field when
-            # it's empty (instead of what you would expect, a {})
-            optional_default = None
-        else:
-            optional_default = func_entry['defaults'].get(name, None)
-
-        jai_arg_type = to_jai_type(arg_type)
         wrapper_arg_type = jai_arg_type
         call_arg_value = name
+        default_str = ""
+
+        optional_default, default_info = make_jai_default_arg(structs_and_enums, (func_entry['defaults'] or {}).get(name, None), arg_type)
+
+        if optional_default is not None and jai_arg_type == "*u8":
+            # jai as of beta 0.0.024 has a bug where string
+            # default arguments to #foreign procs don't work,
+            # so we'll wrap those functions.
+            needs_defaults_wrapper = True
+            wrapper_arg_type = "string";
+            call_arg_value = name + ".data"
+            if optional_default == "null":
+                optional_default = '""'
+        elif optional_default is not None and not parsed_arg.get('func') and count_pointers(parsed_arg['jai_type']) == 1 and default_info.get("was_constructor"):
+            needs_defaults_wrapper = True
+            wrapper_arg_type = strip_pointer_or_array(parsed_arg['jai_type'])
+            call_arg_value = "*" + name
+        else:
+            assert parsed_arg['name'] == name, parsed_arg["name"] + " vs " + name
+            if isinstance(parsed_arg["type"], str):
+                assert "jai_type" in parsed_arg, parsed_arg
+                if count_pointers(parsed_arg["jai_type"]) == 1 + count_pointers(jai_arg_type):
+                    call_arg_value = "*" + call_arg_value # take the address of the incoming value
 
         if optional_default is not None:
-            if optional_default == "((void*)0)":
-                optional_default = "null"
-
-            # TODO: check argtype and probably don't use a regex here.
-            # do try: float() except ValueError: instead.
-            float_match = re.match(r"[+-]?(\d+\.\d+)f", optional_default)
-            if float_match is not None:
-                # In jai, floating point values do not end with f -- the compiler
-                # figures out which type the constant should be for us.
-                optional_default = float_match.group(1)
-
-            # hack: also strip f for scientific notation. this should be merged
-            # with the code above.
-            if re.match(r".*e[+-]\d+[Ff]$", optional_default):
-                optional_default = optional_default[:-1]
-            if optional_default == "0.0":
-                optional_default = "0"
-
-
-            optional_default = optional_default.replace("(ImU32)", "cast(u32)")
-
-            constructor_match = re.match(r"^(\w+)\((.*)\)$", optional_default)
-            if constructor_match is not None:
-                constructor_name, args = constructor_match.groups()
-                if constructor_name == "sizeof":
-                    optional_default = "size_of(" + args + ")"
-                else:
-                    optional_default = constructor_name + ".{" + args + "}"
-
-            enum_name = get_enum_name(structs_and_enums["enums"], arg_type, optional_default)
-            if enum_name is not None:
-                optional_default = f".{enum_name}"
-
-            optional_default = convert_enum_default(structs_and_enums["enums"], optional_default)
-
-            if jai_arg_type == "*u8":
-                # jai as of beta 0.0.024 has a bug where string
-                # default arguments to #foreign procs don't work,
-                # so we'll wrap those functions.
-                needs_defaults_wrapper = True
-                wrapper_arg_type = "string";
-                call_arg_value = name + ".data"
-                if optional_default == "null":
-                    optional_default = '""'
-
             default_str = f" = {optional_default}"
 
-        arg_infos.append(ArgInfo(name, jai_arg_type, default_str, wrapper_arg_type, call_arg_value))
+        arg_infos.append(ArgInfo(name, jai_arg_type, default_str, wrapper_arg_type, call_arg_value, parsed_arg_infos[i]))
 
     return arg_infos, needs_defaults_wrapper
 
+def count_pointers(jai_type):
+    return jai_type.count("*") + len(re.findall(r"\[(?:\d+)?\]", jai_type))
 
 def main():
     # get symbols from windows dll
     if not os.path.isfile(PATH_TO_IMGUI_DLL):
-        print("error - expected file to exist: " + PATH_TO_IMGUI_DLL, file=sys.stderr)
-        sys.exit(1)
+        raise Exception("error - expected imgui dll to exist here: " + PATH_TO_IMGUI_DLL)
 
     symbols = get_windows_symbols(PATH_TO_IMGUI_DLL)
     if len(symbols) == 0:
-        sys.exit(1)
+        raise Exception("Couldn't read DLL symbols. Are you in a Visual Studio command prompt? The PATH must contain dumpbin.exe.")
 
     # parse out their demangled descriptions and group them by function name
     symbols_grouped = group_symbols(symbols)
@@ -741,52 +846,27 @@ int main(int argc, char** argv) {
     def p_sizer_for_name(name, jai_name):
         p_sizer(f"""    printf("{cimgui_name} {jai_name} %lld\\n", sizeof({cimgui_name}));""")
 
-
     #
     # enums
     #
     print_section("ENUMS")
     for cimgui_name, enum_values in structs_and_enums["enums"].items():
-        if "Private_" in cimgui_name: continue
+        if SKIP_PRIVATE_ENUMS and "Private_" in cimgui_name: continue
         if cimgui_name.endswith("_"):
             cimgui_name = cimgui_name[:-1]
 
         jai_enum_name = strip_im_prefixes(cimgui_name)
         enum_or_enum_flags = "enum_flags" if "Flags" in jai_enum_name else "enum"
 
-        '''
-        highest_value = max(v['calc_value'] for v in enum_values)
-        needs_signed = any(v['calc_value'] < 0 for v in enum_values)
-
-
-        enum_size = ""
-        if needs_signed:
-            if highest_value < 2 ** 63: enum_size = " s4"
-            if highest_value < 2 ** 31: enum_size = " s32"
-            if highest_value < 2 ** 15: enum_size = " s16"
-            #if highest_value < 2 ** 7: enum_size = " s8"
-        else:
-            if highest_value < 2 ** 64: enum_size = " 64"
-            if highest_value < 2 ** 32: enum_size = " u32"
-            if highest_value < 2 ** 16: enum_size = " u16"
-            #if highest_value < 2 ** 8: enum_size = " u8"
-        '''
-        enum_size = " s32"
-
-        p(f"{jai_enum_name} :: {enum_or_enum_flags}{enum_size} {{")
-
-        # p_sizer_for_name(cimgui_name, jai_enum_name);
+        p(f"{jai_enum_name} :: {enum_or_enum_flags} {ENUM_TYPE} {{")
 
         output_entries = []
-        max_name_len = 0
         for entry_idx, entry in enumerate(enum_values):
             name = entry['name']
             assert name.startswith(cimgui_name), f"{name} does not start with '{cimgui_name}'"
             name = name[len(cimgui_name):]
             if name.startswith("_"):
                 name = name[1:]
-
-            max_name_len = max(len(name), max_name_len)
 
             value = entry['value']
             if isinstance(value, str):
@@ -796,14 +876,9 @@ int main(int argc, char** argv) {
                 else:
                     value = value.replace(cimgui_name,       f"{jai_enum_name}.")
 
-            output_entries.append([name, 0, value])
-        for i in range(len(output_entries)):
-            output_entries[i][1] = max_name_len
+            output_entries.append((name, f":: {value};"))
         
-        for name, num_spaces, value in output_entries:
-            space = ' ' * (num_spaces - len(name) + 1)
-            p(f"    {name}{space}:: {value};")
-
+        p_aligned(output_entries, prefix=4 * " ")
         p(f"}}\n")
 
     #
@@ -812,8 +887,7 @@ int main(int argc, char** argv) {
 
     # parse the definitions JSON
     print_section("FUNCTIONS")
-    definitions = json.load(open(generator_output_dir + "definitions.json", "r"))
-    func_count = 0
+    definitions = load_definitions()
 
     struct_functions = defaultdict(list)
     global_functions = list()
@@ -833,32 +907,38 @@ int main(int argc, char** argv) {
             if entry.get("location", None) == "internal":
                 continue
 
-            assert "funcname" in entry, str(entry)
-
-            jai_func_name = entry["funcname"]
-            stname = entry.get("stname", None) or None
-
             args_info, needs_defaults_wrapper = get_jai_args(structs_and_enums, entry)
+
+            if entry['funcname'] in diagnose_funcnames:
+                print("=== needs defaults wrapper: ", needs_defaults_wrapper)
 
             ret_type = entry.get("ret", None)
             if ret_type == "void": ret_type = None
             ret_val_with_arrow = f" -> {to_jai_type(ret_type)}" if ret_type is not None else ""
 
-            dll_symbol = get_function_symbol(symbols_grouped, structs_and_enums, entry)
-            if dll_symbol is None: continue
+            dll_symbol = get_function_symbol(symbols_grouped, structs_and_enums, entry, args_info)
+            if dll_symbol is None:
+                continue
+
             foreign_decl = "#foreign imgui_lib \"" + dll_symbol + "\""
 
             stats['actual_function_matches'] += 1
 
             if needs_defaults_wrapper:
-                args_string = ", ".join("{name}: {jai_arg_type}{default_str}".format(**k._asdict()) for k in args_info)
-                wrapper_args_string = ", ".join("{name}: {wrapper_arg_type}{default_str}".format(**k._asdict()) for k in args_info)
+                def get_dict(k):
+                    dct = k._asdict()
+                    dct.update(meta_jai_type=to_jai_type(k.meta["type"]))
+                    return dct
 
-                jai_func_name_internal = "_internal_" + jai_func_name
+                args_string = ", ".join("{name}: {meta_jai_type}{default_str}".format(**get_dict(k)) for k in args_info)
+                args_string_internal = ", ".join("{name}: {meta_jai_type}".format(**get_dict(k)) for k in args_info)
+                wrapper_args_string = ", ".join("{name}: {wrapper_arg_type}{default_str}".format(**get_dict(k)) for k in args_info)
+
+                jai_func_name_internal = "_internal_" + entry['funcname']
                 call_args = ", ".join("{call_arg_value}".format(**k._asdict()) for k in args_info)
                 function_definition = f""" :: ({wrapper_args_string}){ret_val_with_arrow} {{
-                {jai_func_name_internal} :: ({args_string}){ret_val_with_arrow} {foreign_decl};
-                {"return " if ret_val_with_arrow else ""}{jai_func_name_internal}({call_args});
+    {jai_func_name_internal} :: ({args_string_internal}){ret_val_with_arrow} {foreign_decl};
+    {"return " if ret_val_with_arrow else ""}{jai_func_name_internal}({call_args});
             }}"""
             else:
                 args_string = ", ".join(
@@ -867,14 +947,13 @@ int main(int argc, char** argv) {
                 function_definition = f" :: ({args_string}){ret_val_with_arrow} {foreign_decl};"
 
 
-            jai_function_line = (jai_func_name, function_definition)
-
+            jai_function_line = (entry['funcname'], function_definition)
+            stname = entry.get("stname", None) or None
             if stname is not None:
                 struct_functions[strip_im_prefixes(stname)].append(jai_function_line);
             else:
                 global_functions.append(jai_function_line)
                 stats["printed_functions"] += 1
-            func_count += 1
 
     p_aligned(global_functions)
 
@@ -891,8 +970,7 @@ int main(int argc, char** argv) {
                 stats["skipped_internal_structs"] += 1
 
                 if cimgui_name in diagnose_funcnames:
-                    print(f"diagnosing {cimgui_name} but about to skip it!")
-                    sys.exit(1)
+                    raise Exception(f"diagnosing {cimgui_name} but about to skip it!")
 
                 return False
         
@@ -935,19 +1013,23 @@ int main(int argc, char** argv) {
     print(f"\nMISSED {len(functions_skipped)} functions:", ', '.join(functions_skipped))
     pprint(dict(stats))
 
-foo = dict(nomatch_verbose = False)
+    stats_file = "stats.txt"
+    if os.path.isfile(stats_file):
+        old_stats = json.load(open(stats_file, "r"))
+        print("DELTA:")
+        for k, v in stats.items():
+            print(f"    {v - old_stats[k]} {k}")
 
-diagnose_funcnames = frozenset([
-    # "ListBox",
-    # "GetItemRectMin",
-] + sys.argv[1:])
+    open(stats_file, "w").write(json.dumps(stats))
 
+_state = dict(nomatch_verbose = False)
 
-def get_function_symbol(symbols_grouped, structs_and_enums, function_entry):
+def get_function_symbol(symbols_grouped, structs_and_enums, function_entry, args_info):
     # Given a list of function symbols from the DLL, attempt to match by
     # function name, argument and return types, and namespace. Returns
     # the mangled symbol name.
 
+    args_info = args_info[:]
     enums = structs_and_enums["enums"]
     funcname = function_entry["funcname"]
     funcs = symbols_grouped[funcname]
@@ -964,14 +1046,14 @@ def get_function_symbol(symbols_grouped, structs_and_enums, function_entry):
         stname = function_entry.get("stname", None)
         functions_skipped.append((f"{stname}::" if stname else "") + funcname)
 
-        if foo['nomatch_verbose'] or funcname in diagnose_funcnames:
+        if _state['nomatch_verbose'] or funcname in diagnose_funcnames:
             print(f"===============\nno match: " + funcname)
             print("functions in dll: " + pformat(funcs))
             print("function in json: " + pformat(function_entry))
             print("skip reasons:\n" + pformat(skip_reasons))
             if stats['total_no_matches'] > 5:
                 print("...stopping showing no matches")
-                foo['nomatch_verbose'] = False
+                _state['nomatch_verbose'] = False
 
     for dll_func in funcs:
         if dll_func['nspace_or_stname'] != function_entry.get("stname", None) and \
@@ -980,6 +1062,16 @@ def get_function_symbol(symbols_grouped, structs_and_enums, function_entry):
                 ("nspace/stname", (dll_func['nspace_or_stname'], function_entry.get('stname'), function_entry.get('namespace'))))
             continue
 
+        if len(args_info) > 0 and args_info[0].name == "self":
+            args_info.pop(0)
+
+        if False: assert len(args_info) < 1, pformat(
+            (
+                ("args_info", [i.meta for i in args_info]),
+                ("dll_func", dll_func)
+            )
+        , width=200)
+
         jai_dll_ret = to_jai_type(dll_func['retval'])
         jai_entry_ret = to_jai_type(function_entry["ret"])
         equiv, reason = jai_types_equivalent(enums, jai_dll_ret, jai_entry_ret)
@@ -987,6 +1079,7 @@ def get_function_symbol(symbols_grouped, structs_and_enums, function_entry):
             skip_reasons.append(("return value (json, dll)", (jai_dll_ret, jai_entry_ret)))
             continue
 
+        '''
         argsT = function_entry["argsT"]
         if len(dll_func["args"]) != len(argsT):
 
@@ -1000,6 +1093,8 @@ def get_function_symbol(symbols_grouped, structs_and_enums, function_entry):
                 continue
 
         arg_types = [to_jai_type(a["type"]) for a in argsT]
+        '''
+        arg_types = [to_jai_type(a.meta["type"]) for a in args_info]
         dll_types = [to_jai_type(a) for a in dll_func['args']]
         if funcname in diagnose_funcnames:
             print("dll_types", dll_types)
@@ -1020,12 +1115,6 @@ def get_function_symbol(symbols_grouped, structs_and_enums, function_entry):
     nomatch()
     return None
 
-def print_enum_sizes():
-    structs_and_enums = load_structs_and_enums()
-    #for structs_and_enums["enums"]
-
-            
-
 assert to_jai_type("const char*") == "*u8", "uhoh: " + to_jai_type("const_char*")
 
 def test_get_jai_func_ptr():
@@ -1035,14 +1124,9 @@ def test_get_jai_func_ptr():
     assert res == expected_jai_func,\
         "for: {}\nexpected: {}\nbut got:  {}".format(cpp_func, expected_jai_func, res)
 
-
 test_get_jai_func_ptr()
 
-
 if __name__ == "__main__":
-    #if len(sys.argv) > 0 and sys.argv[1] == "enumsizes":
-        #print_enum_sizes()
-    #else:
-        main()
+    main()
 
 

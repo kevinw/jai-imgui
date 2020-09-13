@@ -10,6 +10,7 @@ Input :: #import "Input";
 
 
 ImGui :: #import "imgui";
+ImDrawIdx :: ImGui.ImDrawIdx;
 make_ImVec2 :: ImGui.make_ImVec2;
 
 UI_State :: struct {
@@ -42,9 +43,7 @@ ImGui_Impl_CreateContext :: (using ui_state: *UI_State) {
 // This is the main rendering function that you have to implement and provide to ImGui (via setting up 'RenderDrawListsFn' in the ImGuiIO structure)
 // Note that this implementation is little overcomplicated because we are saving/setting up/restoring every OpenGL state explicitly, in order to be able to run within any OpenGL engine that doesn't do so. 
 // If text or lines are blurry when integrating ImGui in your engine: in your Render function, try translating your projection matrix by (0.5f,0.5f) or (0.375f,0.375f)
-ImGui_Impl_RenderDrawLists :: (draw_data: *ImGui.ImDrawData) {
-    using _render_ui_state;
-
+ImGui_Impl_RenderDrawData :: (using ui_state: *UI_State, draw_data: *ImGui.ImDrawData) {
     // @@ Watch out, we don't have a context here!
 
     // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
@@ -175,6 +174,9 @@ ImGui_Impl_ProcessEvent :: (using ui_state: *UI_State, event: Input.Event) -> bo
     using Input;
     io := ImGui.GetIO();
     if event.type == {
+        // TODO: get mouse move events into jai's input handling code
+        //case .MOUSE_MOVE;
+            //return true;
         case .MOUSE_WHEEL;
             if event.wheel_delta > 0 MouseWheel = 1;
             if event.wheel_delta < 0 MouseWheel = -1;
@@ -240,10 +242,6 @@ ImGui_Impl_CreateFontsTexture :: (using ui_state: *UI_State) -> bool {
 }
 
 ImGui_Impl_CreateDeviceObjects :: (using ui_state: *UI_State) -> bool {
-    if gl.glActiveTexture != null return true; // already created
-
-    gl_load(*gl);
-
     // Backup GL state
     last_texture, last_array_buffer, last_vertex_array: GLuint;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, xx *last_texture);
