@@ -814,7 +814,7 @@ EndTabItem                     :: () #foreign imgui_lib "?EndTabItem@ImGui@@YAXX
 EndTooltip                     :: () #foreign imgui_lib "?EndTooltip@ImGui@@YAXXZ";
 FindViewportByID               :: (id: ID) -> *Viewport #foreign imgui_lib "?FindViewportByID@ImGui@@YAPEAUImGuiViewport@@I@Z";
 FindViewportByPlatformHandle   :: (platform_handle: *void) -> *Viewport #foreign imgui_lib "?FindViewportByPlatformHandle@ImGui@@YAPEAUImGuiViewport@@PEAX@Z";
-GetBackgroundDrawList          :: () -> *ImDrawList #foreign imgui_lib "?GetBackgroundDrawList@ImGui@@YAPEAUImDrawList@@PEAUImGuiViewport@@@Z";
+GetBackgroundDrawList          :: () -> *ImDrawList #foreign imgui_lib "?GetBackgroundDrawList@ImGui@@YAPEAUImDrawList@@XZ";
 GetBackgroundDrawList          :: (viewport: *Viewport) -> *ImDrawList #foreign imgui_lib "?GetBackgroundDrawList@ImGui@@YAPEAUImDrawList@@PEAUImGuiViewport@@@Z";
 GetClipboardText               :: () -> *u8 #foreign imgui_lib "?GetClipboardText@ImGui@@YAPEBDXZ";
 GetColorU32                    :: (idx: Col, alpha_mul: float = 1.0) -> u32 #foreign imgui_lib "?GetColorU32@ImGui@@YAIHM@Z";
@@ -832,12 +832,12 @@ GetDrawData                    :: () -> *ImDrawData #foreign imgui_lib "?GetDraw
 GetDrawListSharedData          :: () -> *ImDrawListSharedData #foreign imgui_lib "?GetDrawListSharedData@ImGui@@YAPEAUImDrawListSharedData@@XZ";
 GetFont                        :: () -> *ImFont #foreign imgui_lib "?GetFont@ImGui@@YAPEAUImFont@@XZ";
 GetFontSize                    :: () -> float #foreign imgui_lib "?GetFontSize@ImGui@@YAMXZ";
-GetForegroundDrawList          :: () -> *ImDrawList #foreign imgui_lib "?GetForegroundDrawList@ImGui@@YAPEAUImDrawList@@PEAUImGuiViewport@@@Z";
+GetForegroundDrawList          :: () -> *ImDrawList #foreign imgui_lib "?GetForegroundDrawList@ImGui@@YAPEAUImDrawList@@XZ";
 GetForegroundDrawList          :: (viewport: *Viewport) -> *ImDrawList #foreign imgui_lib "?GetForegroundDrawList@ImGui@@YAPEAUImDrawList@@PEAUImGuiViewport@@@Z";
 GetFrameCount                  :: () -> s32 #foreign imgui_lib "?GetFrameCount@ImGui@@YAHXZ";
 GetFrameHeight                 :: () -> float #foreign imgui_lib "?GetFrameHeight@ImGui@@YAMXZ";
 GetFrameHeightWithSpacing      :: () -> float #foreign imgui_lib "?GetFrameHeightWithSpacing@ImGui@@YAMXZ";
-GetID                          :: (str_id: *u8) -> ID #foreign imgui_lib "?GetID@ImGui@@YAIPEBD0@Z";
+GetID                          :: (str_id: *u8) -> ID #foreign imgui_lib "?GetID@ImGui@@YAIPEBD@Z";
 GetID                          :: (str_id_begin: *u8, str_id_end: *u8) -> ID #foreign imgui_lib "?GetID@ImGui@@YAIPEBD0@Z";
 GetID                          :: (ptr_id: *void) -> ID #foreign imgui_lib "?GetID@ImGui@@YAIPEBX@Z";
 GetIO                          :: () -> *IO #foreign imgui_lib "?GetIO@ImGui@@YAAEAUImGuiIO@@XZ";
@@ -907,6 +907,12 @@ InputScalarN                   :: (label: *u8, data_type: DataType, p_data: *voi
     _internal_InputScalarN :: (label: *u8, data_type: DataType, p_data: *void, components: s32, p_step: *void, p_step_fast: *void, format: *u8, flags: InputTextFlags) -> bool #foreign imgui_lib "?InputScalarN@ImGui@@YA_NPEBDHPEAXHPEBX20H@Z";
     return _internal_InputScalarN(label, data_type, p_data, components, p_step, p_step_fast, format.data, flags);
             }
+InputText                      :: (label: *u8, buf: *u8, buf_size: u64, flags: InputTextFlags = .None, callback: InputTextCallback = null, user_data: *void = null) -> bool #foreign imgui_lib "?InputText@ImGui@@YA_NPEBDPEAD_KHP6AHPEAUImGuiInputTextCallbackData@@@ZPEAX@Z";
+InputTextMultiline             :: (label: *u8, buf: *u8, buf_size: u64, size: ImVec2 = ImVec2.{0,0}, flags: InputTextFlags = .None, callback: InputTextCallback = null, user_data: *void = null) -> bool {
+    _internal_InputTextMultiline :: (label: *u8, buf: *u8, buf_size: u64, size: *ImVec2, flags: InputTextFlags, callback: InputTextCallback, user_data: *void) -> bool #foreign imgui_lib "?InputTextMultiline@ImGui@@YA_NPEBDPEAD_KAEBUImVec2@@HP6AHPEAUImGuiInputTextCallbackData@@@ZPEAX@Z";
+    return _internal_InputTextMultiline(label, buf, buf_size, *size, flags, callback, user_data);
+            }
+InputTextWithHint              :: (label: *u8, hint: *u8, buf: *u8, buf_size: u64, flags: InputTextFlags = .None, callback: InputTextCallback = null, user_data: *void = null) -> bool #foreign imgui_lib "?InputTextWithHint@ImGui@@YA_NPEBD0PEAD_KHP6AHPEAUImGuiInputTextCallbackData@@@ZPEAX@Z";
 InvisibleButton                :: (str_id: *u8, size: *ImVec2, flags: ButtonFlags = .None) -> bool #foreign imgui_lib "?InvisibleButton@ImGui@@YA_NPEBDAEBUImVec2@@H@Z";
 IsAnyItemActive                :: () -> bool #foreign imgui_lib "?IsAnyItemActive@ImGui@@YA_NXZ";
 IsAnyItemFocused               :: () -> bool #foreign imgui_lib "?IsAnyItemFocused@ImGui@@YA_NXZ";
@@ -933,7 +939,7 @@ IsMouseHoveringRect            :: (r_min: *ImVec2, r_max: *ImVec2, clip: bool = 
 IsMousePosValid                :: (mouse_pos: *ImVec2 = null) -> bool #foreign imgui_lib "?IsMousePosValid@ImGui@@YA_NPEBUImVec2@@@Z";
 IsMouseReleased                :: (button: MouseButton) -> bool #foreign imgui_lib "?IsMouseReleased@ImGui@@YA_NH@Z";
 IsPopupOpen                    :: (str_id: *u8, flags: PopupFlags = .None) -> bool #foreign imgui_lib "?IsPopupOpen@ImGui@@YA_NPEBDH@Z";
-IsRectVisible                  :: (size: *ImVec2) -> bool #foreign imgui_lib "?IsRectVisible@ImGui@@YA_NAEBUImVec2@@0@Z";
+IsRectVisible                  :: (size: *ImVec2) -> bool #foreign imgui_lib "?IsRectVisible@ImGui@@YA_NAEBUImVec2@@@Z";
 IsRectVisible                  :: (rect_min: *ImVec2, rect_max: *ImVec2) -> bool #foreign imgui_lib "?IsRectVisible@ImGui@@YA_NAEBUImVec2@@0@Z";
 IsWindowAppearing              :: () -> bool #foreign imgui_lib "?IsWindowAppearing@ImGui@@YA_NXZ";
 IsWindowCollapsed              :: () -> bool #foreign imgui_lib "?IsWindowCollapsed@ImGui@@YA_NXZ";
@@ -1008,7 +1014,7 @@ PushAllowKeyboardFocus         :: (allow_keyboard_focus: bool) #foreign imgui_li
 PushButtonRepeat               :: (repeat: bool) #foreign imgui_lib "?PushButtonRepeat@ImGui@@YAX_N@Z";
 PushClipRect                   :: (clip_rect_min: *ImVec2, clip_rect_max: *ImVec2, intersect_with_current_clip_rect: bool) #foreign imgui_lib "?PushClipRect@ImGui@@YAXAEBUImVec2@@0_N@Z";
 PushFont                       :: (font: *ImFont) #foreign imgui_lib "?PushFont@ImGui@@YAXPEAUImFont@@@Z";
-PushID                         :: (str_id: *u8) #foreign imgui_lib "?PushID@ImGui@@YAXPEBD0@Z";
+PushID                         :: (str_id: *u8) #foreign imgui_lib "?PushID@ImGui@@YAXPEBD@Z";
 PushID                         :: (str_id_begin: *u8, str_id_end: *u8) #foreign imgui_lib "?PushID@ImGui@@YAXPEBD0@Z";
 PushID                         :: (ptr_id: *void) #foreign imgui_lib "?PushID@ImGui@@YAXPEBX@Z";
 PushID                         :: (int_id: s32) #foreign imgui_lib "?PushID@ImGui@@YAXH@Z";
@@ -1063,6 +1069,7 @@ SetNextWindowPos               :: (pos: *ImVec2, cond: Cond = .None, pivot: ImVe
     _internal_SetNextWindowPos(pos, cond, *pivot);
             }
 SetNextWindowSize              :: (size: *ImVec2, cond: Cond = .None) #foreign imgui_lib "?SetNextWindowSize@ImGui@@YAXAEBUImVec2@@H@Z";
+SetNextWindowSizeConstraints   :: (size_min: *ImVec2, size_max: *ImVec2, custom_callback: SizeCallback = null, custom_callback_data: *void = null) #foreign imgui_lib "?SetNextWindowSizeConstraints@ImGui@@YAXAEBUImVec2@@0P6AXPEAUImGuiSizeCallbackData@@@ZPEAX@Z";
 SetNextWindowViewport          :: (viewport_id: ID) #foreign imgui_lib "?SetNextWindowViewport@ImGui@@YAXI@Z";
 SetScrollFromPosX              :: (local_x: float, center_x_ratio: float = 0.5) #foreign imgui_lib "?SetScrollFromPosX@ImGui@@YAXMM@Z";
 SetScrollFromPosY              :: (local_y: float, center_y_ratio: float = 0.5) #foreign imgui_lib "?SetScrollFromPosY@ImGui@@YAXMM@Z";
@@ -1075,7 +1082,7 @@ SetTabItemClosed               :: (tab_or_docked_window_label: *u8) #foreign img
 SetTooltip                     :: (fmt: *u8, args: ..Any) #foreign imgui_lib "?SetTooltip@ImGui@@YAXPEBDZZ";
 SetWindowCollapsed             :: (collapsed: bool, cond: Cond = .None) #foreign imgui_lib "?SetWindowCollapsed@ImGui@@YAX_NH@Z";
 SetWindowCollapsed             :: (name: *u8, collapsed: bool, cond: Cond = .None) #foreign imgui_lib "?SetWindowCollapsed@ImGui@@YAXPEBD_NH@Z";
-SetWindowFocus                 :: () #foreign imgui_lib "?SetWindowFocus@ImGui@@YAXPEBD@Z";
+SetWindowFocus                 :: () #foreign imgui_lib "?SetWindowFocus@ImGui@@YAXXZ";
 SetWindowFocus                 :: (name: *u8) #foreign imgui_lib "?SetWindowFocus@ImGui@@YAXPEBD@Z";
 SetWindowFontScale             :: (scale: float) #foreign imgui_lib "?SetWindowFontScale@ImGui@@YAXM@Z";
 SetWindowPos                   :: (pos: *ImVec2, cond: Cond = .None) #foreign imgui_lib "?SetWindowPos@ImGui@@YAXAEBUImVec2@@H@Z";
@@ -1146,10 +1153,10 @@ TextUnformatted                :: (text: *u8, text_end: string = "") {
     _internal_TextUnformatted(text, text_end.data);
             }
 TextWrapped                    :: (fmt: *u8, args: ..Any) #foreign imgui_lib "?TextWrapped@ImGui@@YAXPEBDZZ";
-TreeNode                       :: (label: *u8) -> bool #foreign imgui_lib "?TreeNode@ImGui@@YA_NPEBD0ZZ";
+TreeNode                       :: (label: *u8) -> bool #foreign imgui_lib "?TreeNode@ImGui@@YA_NPEBD@Z";
 TreeNode                       :: (str_id: *u8, fmt: *u8, args: ..Any) -> bool #foreign imgui_lib "?TreeNode@ImGui@@YA_NPEBD0ZZ";
 TreeNode                       :: (ptr_id: *void, fmt: *u8, args: ..Any) -> bool #foreign imgui_lib "?TreeNode@ImGui@@YA_NPEBXPEBDZZ";
-TreeNodeEx                     :: (label: *u8, flags: TreeNodeFlags = .None) -> bool #foreign imgui_lib "?TreeNodeEx@ImGui@@YA_NPEBDH0ZZ";
+TreeNodeEx                     :: (label: *u8, flags: TreeNodeFlags = .None) -> bool #foreign imgui_lib "?TreeNodeEx@ImGui@@YA_NPEBDH@Z";
 TreeNodeEx                     :: (str_id: *u8, flags: TreeNodeFlags, fmt: *u8, args: ..Any) -> bool #foreign imgui_lib "?TreeNodeEx@ImGui@@YA_NPEBDH0ZZ";
 TreeNodeEx                     :: (ptr_id: *void, flags: TreeNodeFlags, fmt: *u8, args: ..Any) -> bool #foreign imgui_lib "?TreeNodeEx@ImGui@@YA_NPEBXHPEBDZZ";
 TreePop                        :: () #foreign imgui_lib "?TreePop@ImGui@@YAXXZ";
@@ -1559,7 +1566,7 @@ InputTextCallbackData :: struct {
     UserData: *void;
     EventChar: ImWchar;
     EventKey: Key;
-    Buf: *s8;
+    Buf: *u8;
     BufTextLen: s32;
     BufSize: s32;
     BufDirty: bool;
@@ -1812,11 +1819,9 @@ ImDrawIdx :: u16;
 ImFileHandle :: *void;
 ImGuiID :: u32;
 ID :: u32;
-
-ImDrawCallback    :: #type (parent_list: *ImDrawList, cmd: *ImDrawCmd) #c_call;
+ImDrawCallback :: #type (parent_list: *ImDrawList, cmd: *ImDrawCmd) #c_call;
 InputTextCallback :: #type (data: *InputTextCallbackData) -> s32 #c_call;
-SizeCallback      :: #type (data: *SizeCallbackData) #c_call;
-
+SizeCallback :: #type (data: *SizeCallbackData) #c_call;
 ImWchar16 :: u16;
 ImWchar32 :: u32;
 
@@ -1834,7 +1839,15 @@ make_ImVec2 :: inline (a: float, b: float) -> ImVec2 {
     return v;
 }
 
+TreeNode :: (fmt: string, args: ..Any) -> bool {
+    txt := tprintz(fmt, ..args);    // Note that tprintz appends a null byte at the end!
+    return TreeNode(txt.data);
+}
+
+
 #scope_file
+
+#import "Basic";
 
 FLT_MAX :: 0h7F7FFFFF;
 
