@@ -22,7 +22,6 @@ echo.
 
 echo creating imgui_sizes.json...
 set PATH=%PATH%;%ROOT_DIR%win
-echo PATH is %PATH%
 imgui_sizes.exe > imgui_sizes.txt || exit /b
 echo.
 
