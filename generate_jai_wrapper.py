@@ -86,6 +86,14 @@ def load_structs_and_enums():
 def load_definitions():
     return json.load(open(f"{PATH_TO_CIMGUI}/generator/output/definitions.json", "r"))
 
+inline_functions = dict(
+    Viewport = [
+        ("GetCenter",   ":: (using self: *Viewport) -> ImVec2 { return make_ImVec2(Pos.x + Size.x * 0.5, Pos.y + Size.y * 0.5); }"),
+        ("GetWorkPos",  ":: (using self: *Viewport) -> ImVec2 { return make_ImVec2(Pos.x + WorkOffsetMin.x, Pos.y + WorkOffsetMin.y); }"),
+        ("GetWorkSize", ":: (using self: *Viewport) -> ImVec2 { return make_ImVec2(Size.x - WorkOffsetMin.x + WorkOffsetMax.x, Size.y - WorkOffsetMin.y + WorkOffsetMax.y); } // This not clamped"),
+    ]
+)
+
 extra_code = """
 Context :: struct { data: *void; }
 
@@ -125,6 +133,7 @@ TreeNode :: (fmt: string, args: ..Any) -> bool {
     txt := tprintz(fmt, ..args);    // Note that tprintz appends a null byte at the end!
     return TreeNode(txt.data);
 }
+
 
 
 #scope_file
@@ -559,6 +568,7 @@ def all_jai_types_equivalent(enums, zipped_types):
     return True, None, -1
 
 def strip_pointer_or_array(s):
+    # TODO: what if there are pointers to pointers here????
     if s.startswith("*"): return s[1:]
 
     bracket_idx = s.index("]")
@@ -744,6 +754,7 @@ def parse_arg(c_arg_decl, arg_index):
                 args=[parse_arg(a, idx) for idx, a in enumerate(split_args(fn_args))],
                 default=default_arg)
         )
+
     else:
         space_elems = arg_decl.rsplit(' ', 1)
         if len(space_elems) == 1:
@@ -759,7 +770,8 @@ def parse_arg(c_arg_decl, arg_index):
             name=arg_name,
             type=arg_type,
             jai_type=to_jai_type(arg_type),
-            default=default_arg)
+            default=default_arg,
+            is_constref = bool(re.match(r"const \w+&", arg_type)))
 
 def get_jai_args(structs_and_enums, func_entry):
     parsed_arg_infos = []
@@ -814,6 +826,10 @@ def get_jai_args(structs_and_enums, func_entry):
             if optional_default == "null":
                 optional_default = '""'
         elif optional_default is not None and not parsed_arg.get('func') and count_pointers(parsed_arg['jai_type']) == 1 and default_info.get("was_constructor"):
+            needs_defaults_wrapper = True
+            wrapper_arg_type = strip_pointer_or_array(parsed_arg['jai_type'])
+            call_arg_value = "*" + name
+        elif parsed_arg.get('is_constref'):
             needs_defaults_wrapper = True
             wrapper_arg_type = strip_pointer_or_array(parsed_arg['jai_type'])
             call_arg_value = "*" + name
@@ -1031,6 +1047,8 @@ int main(int argc, char** argv) {
             p_aligned(struct_funcs, prefix=4 * " ")
             stats['printed_struct_functions'] += len(struct_funcs)
 
+        p_aligned(inline_functions.get(jai_struct_name, []), prefix=4*' ')
+
         p(f"}}\n")
 
     p_sizer("}")
@@ -1042,7 +1060,13 @@ int main(int argc, char** argv) {
 
     # show stats
     print(f"skipped {len(inline_functions_skipped)} inline functions:", ', '.join(inline_functions_skipped))
+    for f in inline_functions_skipped:
+        if f in diagnose_funcnames:
+            print("ERROR!!! is inline: ", f) # TODO: don't show this message if we have a manual inline function from inline_functions
     print(f"\nMISSED {len(functions_skipped)} functions:", ', '.join(functions_skipped))
+    for f in functions_skipped:
+        if f.split(":")[-1] in diagnose_funcnames:
+            print("ERROR!!! missed: ", f)
     pprint(dict(stats))
 
     stats_file = "stats.txt"

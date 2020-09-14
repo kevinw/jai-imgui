@@ -684,7 +684,10 @@ BeginChild                     :: (id: ID, size: ImVec2 = ImVec2.{0,0}, border: 
     _internal_BeginChild :: (id: ID, size: *ImVec2, border: bool, flags: WindowFlags) -> bool #foreign imgui_lib "?BeginChild@ImGui@@YA_NIAEBUImVec2@@_NH@Z";
     return _internal_BeginChild(id, *size, border, flags);
             }
-BeginChildFrame                :: (id: ID, size: *ImVec2, flags: WindowFlags = .None) -> bool #foreign imgui_lib "?BeginChildFrame@ImGui@@YA_NIAEBUImVec2@@H@Z";
+BeginChildFrame                :: (id: ID, size: ImVec2, flags: WindowFlags = .None) -> bool {
+    _internal_BeginChildFrame :: (id: ID, size: *ImVec2, flags: WindowFlags) -> bool #foreign imgui_lib "?BeginChildFrame@ImGui@@YA_NIAEBUImVec2@@H@Z";
+    return _internal_BeginChildFrame(id, *size, flags);
+            }
 BeginCombo                     :: (label: *u8, preview_value: *u8, flags: ComboFlags = .None) -> bool #foreign imgui_lib "?BeginCombo@ImGui@@YA_NPEBD0H@Z";
 BeginDragDropSource            :: (flags: DragDropFlags = .None) -> bool #foreign imgui_lib "?BeginDragDropSource@ImGui@@YA_NH@Z";
 BeginDragDropTarget            :: () -> bool #foreign imgui_lib "?BeginDragDropTarget@ImGui@@YA_NXZ";
@@ -724,8 +727,14 @@ CheckboxFlags                  :: (label: *u8, flags: *u32, flags_value: u32) ->
 CloseCurrentPopup              :: () #foreign imgui_lib "?CloseCurrentPopup@ImGui@@YAXXZ";
 CollapsingHeader               :: (label: *u8, flags: TreeNodeFlags = .None) -> bool #foreign imgui_lib "?CollapsingHeader@ImGui@@YA_NPEBDH@Z";
 CollapsingHeader               :: (label: *u8, p_open: *bool, flags: TreeNodeFlags = .None) -> bool #foreign imgui_lib "?CollapsingHeader@ImGui@@YA_NPEBDPEA_NH@Z";
-ColorButton                    :: (desc_id: *u8, col: *ImVec4, flags: ColorEditFlags = .None, size: ImVec2 = ImVec2.{0,0}) -> bool #foreign imgui_lib "?ColorButton@ImGui@@YA_NPEBDAEBUImVec4@@HUImVec2@@@Z";
-ColorConvertFloat4ToU32        :: (in: *ImVec4) -> u32 #foreign imgui_lib "?ColorConvertFloat4ToU32@ImGui@@YAIAEBUImVec4@@@Z";
+ColorButton                    :: (desc_id: *u8, col: ImVec4, flags: ColorEditFlags = .None, size: ImVec2 = ImVec2.{0,0}) -> bool {
+    _internal_ColorButton :: (desc_id: *u8, col: *ImVec4, flags: ColorEditFlags, size: ImVec2) -> bool #foreign imgui_lib "?ColorButton@ImGui@@YA_NPEBDAEBUImVec4@@HUImVec2@@@Z";
+    return _internal_ColorButton(desc_id, *col, flags, size);
+            }
+ColorConvertFloat4ToU32        :: (in: ImVec4) -> u32 {
+    _internal_ColorConvertFloat4ToU32 :: (in: *ImVec4) -> u32 #foreign imgui_lib "?ColorConvertFloat4ToU32@ImGui@@YAIAEBUImVec4@@@Z";
+    return _internal_ColorConvertFloat4ToU32(*in);
+            }
 ColorConvertHSVtoRGB           :: (h: float, s: float, v: float, out_r: *float, out_g: *float, out_b: *float) #foreign imgui_lib "?ColorConvertHSVtoRGB@ImGui@@YAXMMMAEAM00@Z";
 ColorConvertRGBtoHSV           :: (r: float, g: float, b: float, out_h: *float, out_s: *float, out_v: *float) #foreign imgui_lib "?ColorConvertRGBtoHSV@ImGui@@YAXMMMAEAM00@Z";
 ColorEdit3                     :: (label: *u8, col: [3]float, flags: ColorEditFlags = .None) -> bool #foreign imgui_lib "?ColorEdit3@ImGui@@YA_NPEBDQEAMH@Z";
@@ -796,7 +805,10 @@ DragScalarN                    :: (label: *u8, data_type: DataType, p_data: *voi
     _internal_DragScalarN :: (label: *u8, data_type: DataType, p_data: *void, components: s32, v_speed: float, p_min: *void, p_max: *void, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?DragScalarN@ImGui@@YA_NPEBDHPEAXHMPEBX20H@Z";
     return _internal_DragScalarN(label, data_type, p_data, components, v_speed, p_min, p_max, format.data, flags);
             }
-Dummy                          :: (size: *ImVec2) #foreign imgui_lib "?Dummy@ImGui@@YAXAEBUImVec2@@@Z";
+Dummy                          :: (size: ImVec2) {
+    _internal_Dummy :: (size: *ImVec2) #foreign imgui_lib "?Dummy@ImGui@@YAXAEBUImVec2@@@Z";
+    _internal_Dummy(*size);
+            }
 End                            :: () #foreign imgui_lib "?End@ImGui@@YAXXZ";
 EndChild                       :: () #foreign imgui_lib "?EndChild@ImGui@@YAXXZ";
 EndChildFrame                  :: () #foreign imgui_lib "?EndChildFrame@ImGui@@YAXXZ";
@@ -818,7 +830,10 @@ GetBackgroundDrawList          :: () -> *ImDrawList #foreign imgui_lib "?GetBack
 GetBackgroundDrawList          :: (viewport: *Viewport) -> *ImDrawList #foreign imgui_lib "?GetBackgroundDrawList@ImGui@@YAPEAUImDrawList@@PEAUImGuiViewport@@@Z";
 GetClipboardText               :: () -> *u8 #foreign imgui_lib "?GetClipboardText@ImGui@@YAPEBDXZ";
 GetColorU32                    :: (idx: Col, alpha_mul: float = 1.0) -> u32 #foreign imgui_lib "?GetColorU32@ImGui@@YAIHM@Z";
-GetColorU32                    :: (col: *ImVec4) -> u32 #foreign imgui_lib "?GetColorU32@ImGui@@YAIAEBUImVec4@@@Z";
+GetColorU32                    :: (col: ImVec4) -> u32 {
+    _internal_GetColorU32 :: (col: *ImVec4) -> u32 #foreign imgui_lib "?GetColorU32@ImGui@@YAIAEBUImVec4@@@Z";
+    return _internal_GetColorU32(*col);
+            }
 GetColorU32                    :: (col: u32) -> u32 #foreign imgui_lib "?GetColorU32@ImGui@@YAII@Z";
 GetColumnIndex                 :: () -> s32 #foreign imgui_lib "?GetColumnIndex@ImGui@@YAHXZ";
 GetColumnOffset                :: (column_index: s32 = -1) -> float #foreign imgui_lib "?GetColumnOffset@ImGui@@YAMH@Z";
@@ -866,13 +881,13 @@ GetWindowDrawList              :: () -> *ImDrawList #foreign imgui_lib "?GetWind
 GetWindowHeight                :: () -> float #foreign imgui_lib "?GetWindowHeight@ImGui@@YAMXZ";
 GetWindowViewport              :: () -> *Viewport #foreign imgui_lib "?GetWindowViewport@ImGui@@YAPEAUImGuiViewport@@XZ";
 GetWindowWidth                 :: () -> float #foreign imgui_lib "?GetWindowWidth@ImGui@@YAMXZ";
-Image                          :: (user_texture_id: ImTextureID, size: *ImVec2, uv0: ImVec2 = ImVec2.{0,0}, uv1: ImVec2 = ImVec2.{1,1}, tint_col: ImVec4 = ImVec4.{1,1,1,1}, border_col: ImVec4 = ImVec4.{0,0,0,0}) {
+Image                          :: (user_texture_id: ImTextureID, size: ImVec2, uv0: ImVec2 = ImVec2.{0,0}, uv1: ImVec2 = ImVec2.{1,1}, tint_col: ImVec4 = ImVec4.{1,1,1,1}, border_col: ImVec4 = ImVec4.{0,0,0,0}) {
     _internal_Image :: (user_texture_id: ImTextureID, size: *ImVec2, uv0: *ImVec2, uv1: *ImVec2, tint_col: *ImVec4, border_col: *ImVec4) #foreign imgui_lib "?Image@ImGui@@YAXPEAXAEBUImVec2@@11AEBUImVec4@@2@Z";
-    _internal_Image(user_texture_id, size, *uv0, *uv1, *tint_col, *border_col);
+    _internal_Image(user_texture_id, *size, *uv0, *uv1, *tint_col, *border_col);
             }
-ImageButton                    :: (user_texture_id: ImTextureID, size: *ImVec2, uv0: ImVec2 = ImVec2.{0,0}, uv1: ImVec2 = ImVec2.{1,1}, frame_padding: s32 = -1, bg_col: ImVec4 = ImVec4.{0,0,0,0}, tint_col: ImVec4 = ImVec4.{1,1,1,1}) -> bool {
+ImageButton                    :: (user_texture_id: ImTextureID, size: ImVec2, uv0: ImVec2 = ImVec2.{0,0}, uv1: ImVec2 = ImVec2.{1,1}, frame_padding: s32 = -1, bg_col: ImVec4 = ImVec4.{0,0,0,0}, tint_col: ImVec4 = ImVec4.{1,1,1,1}) -> bool {
     _internal_ImageButton :: (user_texture_id: ImTextureID, size: *ImVec2, uv0: *ImVec2, uv1: *ImVec2, frame_padding: s32, bg_col: *ImVec4, tint_col: *ImVec4) -> bool #foreign imgui_lib "?ImageButton@ImGui@@YA_NPEAXAEBUImVec2@@11HAEBUImVec4@@2@Z";
-    return _internal_ImageButton(user_texture_id, size, *uv0, *uv1, frame_padding, *bg_col, *tint_col);
+    return _internal_ImageButton(user_texture_id, *size, *uv0, *uv1, frame_padding, *bg_col, *tint_col);
             }
 Indent                         :: (indent_w: float = 0.0) #foreign imgui_lib "?Indent@ImGui@@YAXM@Z";
 InputDouble                    :: (label: *u8, v: *float64, step: float64 = 0, step_fast: float64 = 0, format: string = "%.6f", flags: InputTextFlags = .None) -> bool {
@@ -913,7 +928,10 @@ InputTextMultiline             :: (label: *u8, buf: *u8, buf_size: u64, size: Im
     return _internal_InputTextMultiline(label, buf, buf_size, *size, flags, callback, user_data);
             }
 InputTextWithHint              :: (label: *u8, hint: *u8, buf: *u8, buf_size: u64, flags: InputTextFlags = .None, callback: InputTextCallback = null, user_data: *void = null) -> bool #foreign imgui_lib "?InputTextWithHint@ImGui@@YA_NPEBD0PEAD_KHP6AHPEAUImGuiInputTextCallbackData@@@ZPEAX@Z";
-InvisibleButton                :: (str_id: *u8, size: *ImVec2, flags: ButtonFlags = .None) -> bool #foreign imgui_lib "?InvisibleButton@ImGui@@YA_NPEBDAEBUImVec2@@H@Z";
+InvisibleButton                :: (str_id: *u8, size: ImVec2, flags: ButtonFlags = .None) -> bool {
+    _internal_InvisibleButton :: (str_id: *u8, size: *ImVec2, flags: ButtonFlags) -> bool #foreign imgui_lib "?InvisibleButton@ImGui@@YA_NPEBDAEBUImVec2@@H@Z";
+    return _internal_InvisibleButton(str_id, *size, flags);
+            }
 IsAnyItemActive                :: () -> bool #foreign imgui_lib "?IsAnyItemActive@ImGui@@YA_NXZ";
 IsAnyItemFocused               :: () -> bool #foreign imgui_lib "?IsAnyItemFocused@ImGui@@YA_NXZ";
 IsAnyItemHovered               :: () -> bool #foreign imgui_lib "?IsAnyItemHovered@ImGui@@YA_NXZ";
@@ -935,12 +953,21 @@ IsMouseClicked                 :: (button: MouseButton, repeat: bool = false) ->
 IsMouseDoubleClicked           :: (button: MouseButton) -> bool #foreign imgui_lib "?IsMouseDoubleClicked@ImGui@@YA_NH@Z";
 IsMouseDown                    :: (button: MouseButton) -> bool #foreign imgui_lib "?IsMouseDown@ImGui@@YA_NH@Z";
 IsMouseDragging                :: (button: MouseButton, lock_threshold: float = 1.0) -> bool #foreign imgui_lib "?IsMouseDragging@ImGui@@YA_NHM@Z";
-IsMouseHoveringRect            :: (r_min: *ImVec2, r_max: *ImVec2, clip: bool = true) -> bool #foreign imgui_lib "?IsMouseHoveringRect@ImGui@@YA_NAEBUImVec2@@0_N@Z";
+IsMouseHoveringRect            :: (r_min: ImVec2, r_max: ImVec2, clip: bool = true) -> bool {
+    _internal_IsMouseHoveringRect :: (r_min: *ImVec2, r_max: *ImVec2, clip: bool) -> bool #foreign imgui_lib "?IsMouseHoveringRect@ImGui@@YA_NAEBUImVec2@@0_N@Z";
+    return _internal_IsMouseHoveringRect(*r_min, *r_max, clip);
+            }
 IsMousePosValid                :: (mouse_pos: *ImVec2 = null) -> bool #foreign imgui_lib "?IsMousePosValid@ImGui@@YA_NPEBUImVec2@@@Z";
 IsMouseReleased                :: (button: MouseButton) -> bool #foreign imgui_lib "?IsMouseReleased@ImGui@@YA_NH@Z";
 IsPopupOpen                    :: (str_id: *u8, flags: PopupFlags = .None) -> bool #foreign imgui_lib "?IsPopupOpen@ImGui@@YA_NPEBDH@Z";
-IsRectVisible                  :: (size: *ImVec2) -> bool #foreign imgui_lib "?IsRectVisible@ImGui@@YA_NAEBUImVec2@@@Z";
-IsRectVisible                  :: (rect_min: *ImVec2, rect_max: *ImVec2) -> bool #foreign imgui_lib "?IsRectVisible@ImGui@@YA_NAEBUImVec2@@0@Z";
+IsRectVisible                  :: (size: ImVec2) -> bool {
+    _internal_IsRectVisible :: (size: *ImVec2) -> bool #foreign imgui_lib "?IsRectVisible@ImGui@@YA_NAEBUImVec2@@@Z";
+    return _internal_IsRectVisible(*size);
+            }
+IsRectVisible                  :: (rect_min: ImVec2, rect_max: ImVec2) -> bool {
+    _internal_IsRectVisible :: (rect_min: *ImVec2, rect_max: *ImVec2) -> bool #foreign imgui_lib "?IsRectVisible@ImGui@@YA_NAEBUImVec2@@0@Z";
+    return _internal_IsRectVisible(*rect_min, *rect_max);
+            }
 IsWindowAppearing              :: () -> bool #foreign imgui_lib "?IsWindowAppearing@ImGui@@YA_NXZ";
 IsWindowCollapsed              :: () -> bool #foreign imgui_lib "?IsWindowCollapsed@ImGui@@YA_NXZ";
 IsWindowDocked                 :: () -> bool #foreign imgui_lib "?IsWindowDocked@ImGui@@YA_NXZ";
@@ -1012,7 +1039,10 @@ ProgressBar                    :: (fraction: float, size_arg: ImVec2 = ImVec2.{-
             }
 PushAllowKeyboardFocus         :: (allow_keyboard_focus: bool) #foreign imgui_lib "?PushAllowKeyboardFocus@ImGui@@YAX_N@Z";
 PushButtonRepeat               :: (repeat: bool) #foreign imgui_lib "?PushButtonRepeat@ImGui@@YAX_N@Z";
-PushClipRect                   :: (clip_rect_min: *ImVec2, clip_rect_max: *ImVec2, intersect_with_current_clip_rect: bool) #foreign imgui_lib "?PushClipRect@ImGui@@YAXAEBUImVec2@@0_N@Z";
+PushClipRect                   :: (clip_rect_min: ImVec2, clip_rect_max: ImVec2, intersect_with_current_clip_rect: bool) {
+    _internal_PushClipRect :: (clip_rect_min: *ImVec2, clip_rect_max: *ImVec2, intersect_with_current_clip_rect: bool) #foreign imgui_lib "?PushClipRect@ImGui@@YAXAEBUImVec2@@0_N@Z";
+    _internal_PushClipRect(*clip_rect_min, *clip_rect_max, intersect_with_current_clip_rect);
+            }
 PushFont                       :: (font: *ImFont) #foreign imgui_lib "?PushFont@ImGui@@YAXPEAUImFont@@@Z";
 PushID                         :: (str_id: *u8) #foreign imgui_lib "?PushID@ImGui@@YAXPEBD@Z";
 PushID                         :: (str_id_begin: *u8, str_id_end: *u8) #foreign imgui_lib "?PushID@ImGui@@YAXPEBD0@Z";
@@ -1020,9 +1050,15 @@ PushID                         :: (ptr_id: *void) #foreign imgui_lib "?PushID@Im
 PushID                         :: (int_id: s32) #foreign imgui_lib "?PushID@ImGui@@YAXH@Z";
 PushItemWidth                  :: (item_width: float) #foreign imgui_lib "?PushItemWidth@ImGui@@YAXM@Z";
 PushStyleColor                 :: (idx: Col, col: u32) #foreign imgui_lib "?PushStyleColor@ImGui@@YAXHI@Z";
-PushStyleColor                 :: (idx: Col, col: *ImVec4) #foreign imgui_lib "?PushStyleColor@ImGui@@YAXHAEBUImVec4@@@Z";
+PushStyleColor                 :: (idx: Col, col: ImVec4) {
+    _internal_PushStyleColor :: (idx: Col, col: *ImVec4) #foreign imgui_lib "?PushStyleColor@ImGui@@YAXHAEBUImVec4@@@Z";
+    _internal_PushStyleColor(idx, *col);
+            }
 PushStyleVar                   :: (idx: StyleVar, val: float) #foreign imgui_lib "?PushStyleVar@ImGui@@YAXHM@Z";
-PushStyleVar                   :: (idx: StyleVar, val: *ImVec2) #foreign imgui_lib "?PushStyleVar@ImGui@@YAXHAEBUImVec2@@@Z";
+PushStyleVar                   :: (idx: StyleVar, val: ImVec2) {
+    _internal_PushStyleVar :: (idx: StyleVar, val: *ImVec2) #foreign imgui_lib "?PushStyleVar@ImGui@@YAXHAEBUImVec2@@@Z";
+    _internal_PushStyleVar(idx, *val);
+            }
 PushTextWrapPos                :: (wrap_local_pos_x: float = 0.0) #foreign imgui_lib "?PushTextWrapPos@ImGui@@YAXM@Z";
 RadioButton                    :: (label: *u8, active: bool) -> bool #foreign imgui_lib "?RadioButton@ImGui@@YA_NPEBD_N@Z";
 RadioButton                    :: (label: *u8, v: *s32, v_button: s32) -> bool #foreign imgui_lib "?RadioButton@ImGui@@YA_NPEBDPEAHH@Z";
@@ -1047,10 +1083,16 @@ SetColorEditOptions            :: (flags: ColorEditFlags) #foreign imgui_lib "?S
 SetColumnOffset                :: (column_index: s32, offset_x: float) #foreign imgui_lib "?SetColumnOffset@ImGui@@YAXHM@Z";
 SetColumnWidth                 :: (column_index: s32, width: float) #foreign imgui_lib "?SetColumnWidth@ImGui@@YAXHM@Z";
 SetCurrentContext              :: (ctx: *Context) #foreign imgui_lib "?SetCurrentContext@ImGui@@YAXPEAUImGuiContext@@@Z";
-SetCursorPos                   :: (local_pos: *ImVec2) #foreign imgui_lib "?SetCursorPos@ImGui@@YAXAEBUImVec2@@@Z";
+SetCursorPos                   :: (local_pos: ImVec2) {
+    _internal_SetCursorPos :: (local_pos: *ImVec2) #foreign imgui_lib "?SetCursorPos@ImGui@@YAXAEBUImVec2@@@Z";
+    _internal_SetCursorPos(*local_pos);
+            }
 SetCursorPosX                  :: (local_x: float) #foreign imgui_lib "?SetCursorPosX@ImGui@@YAXM@Z";
 SetCursorPosY                  :: (local_y: float) #foreign imgui_lib "?SetCursorPosY@ImGui@@YAXM@Z";
-SetCursorScreenPos             :: (pos: *ImVec2) #foreign imgui_lib "?SetCursorScreenPos@ImGui@@YAXAEBUImVec2@@@Z";
+SetCursorScreenPos             :: (pos: ImVec2) {
+    _internal_SetCursorScreenPos :: (pos: *ImVec2) #foreign imgui_lib "?SetCursorScreenPos@ImGui@@YAXAEBUImVec2@@@Z";
+    _internal_SetCursorScreenPos(*pos);
+            }
 SetDragDropPayload             :: (type: *u8, data: *void, sz: u64, cond: Cond = .None) -> bool #foreign imgui_lib "?SetDragDropPayload@ImGui@@YA_NPEBDPEBX_KH@Z";
 SetItemAllowOverlap            :: () #foreign imgui_lib "?SetItemAllowOverlap@ImGui@@YAXXZ";
 SetItemDefaultFocus            :: () #foreign imgui_lib "?SetItemDefaultFocus@ImGui@@YAXXZ";
@@ -1061,15 +1103,24 @@ SetNextItemWidth               :: (item_width: float) #foreign imgui_lib "?SetNe
 SetNextWindowBgAlpha           :: (alpha: float) #foreign imgui_lib "?SetNextWindowBgAlpha@ImGui@@YAXM@Z";
 SetNextWindowClass             :: (window_class: *WindowClass) #foreign imgui_lib "?SetNextWindowClass@ImGui@@YAXPEBUImGuiWindowClass@@@Z";
 SetNextWindowCollapsed         :: (collapsed: bool, cond: Cond = .None) #foreign imgui_lib "?SetNextWindowCollapsed@ImGui@@YAX_NH@Z";
-SetNextWindowContentSize       :: (size: *ImVec2) #foreign imgui_lib "?SetNextWindowContentSize@ImGui@@YAXAEBUImVec2@@@Z";
+SetNextWindowContentSize       :: (size: ImVec2) {
+    _internal_SetNextWindowContentSize :: (size: *ImVec2) #foreign imgui_lib "?SetNextWindowContentSize@ImGui@@YAXAEBUImVec2@@@Z";
+    _internal_SetNextWindowContentSize(*size);
+            }
 SetNextWindowDockID            :: (dock_id: ID, cond: Cond = .None) #foreign imgui_lib "?SetNextWindowDockID@ImGui@@YAXIH@Z";
 SetNextWindowFocus             :: () #foreign imgui_lib "?SetNextWindowFocus@ImGui@@YAXXZ";
-SetNextWindowPos               :: (pos: *ImVec2, cond: Cond = .None, pivot: ImVec2 = ImVec2.{0,0}) {
+SetNextWindowPos               :: (pos: ImVec2, cond: Cond = .None, pivot: ImVec2 = ImVec2.{0,0}) {
     _internal_SetNextWindowPos :: (pos: *ImVec2, cond: Cond, pivot: *ImVec2) #foreign imgui_lib "?SetNextWindowPos@ImGui@@YAXAEBUImVec2@@H0@Z";
-    _internal_SetNextWindowPos(pos, cond, *pivot);
+    _internal_SetNextWindowPos(*pos, cond, *pivot);
             }
-SetNextWindowSize              :: (size: *ImVec2, cond: Cond = .None) #foreign imgui_lib "?SetNextWindowSize@ImGui@@YAXAEBUImVec2@@H@Z";
-SetNextWindowSizeConstraints   :: (size_min: *ImVec2, size_max: *ImVec2, custom_callback: SizeCallback = null, custom_callback_data: *void = null) #foreign imgui_lib "?SetNextWindowSizeConstraints@ImGui@@YAXAEBUImVec2@@0P6AXPEAUImGuiSizeCallbackData@@@ZPEAX@Z";
+SetNextWindowSize              :: (size: ImVec2, cond: Cond = .None) {
+    _internal_SetNextWindowSize :: (size: *ImVec2, cond: Cond) #foreign imgui_lib "?SetNextWindowSize@ImGui@@YAXAEBUImVec2@@H@Z";
+    _internal_SetNextWindowSize(*size, cond);
+            }
+SetNextWindowSizeConstraints   :: (size_min: ImVec2, size_max: ImVec2, custom_callback: SizeCallback = null, custom_callback_data: *void = null) {
+    _internal_SetNextWindowSizeConstraints :: (size_min: *ImVec2, size_max: *ImVec2, custom_callback: SizeCallback, custom_callback_data: *void) #foreign imgui_lib "?SetNextWindowSizeConstraints@ImGui@@YAXAEBUImVec2@@0P6AXPEAUImGuiSizeCallbackData@@@ZPEAX@Z";
+    _internal_SetNextWindowSizeConstraints(*size_min, *size_max, custom_callback, custom_callback_data);
+            }
 SetNextWindowViewport          :: (viewport_id: ID) #foreign imgui_lib "?SetNextWindowViewport@ImGui@@YAXI@Z";
 SetScrollFromPosX              :: (local_x: float, center_x_ratio: float = 0.5) #foreign imgui_lib "?SetScrollFromPosX@ImGui@@YAXMM@Z";
 SetScrollFromPosY              :: (local_y: float, center_y_ratio: float = 0.5) #foreign imgui_lib "?SetScrollFromPosY@ImGui@@YAXMM@Z";
@@ -1085,10 +1136,22 @@ SetWindowCollapsed             :: (name: *u8, collapsed: bool, cond: Cond = .Non
 SetWindowFocus                 :: () #foreign imgui_lib "?SetWindowFocus@ImGui@@YAXXZ";
 SetWindowFocus                 :: (name: *u8) #foreign imgui_lib "?SetWindowFocus@ImGui@@YAXPEBD@Z";
 SetWindowFontScale             :: (scale: float) #foreign imgui_lib "?SetWindowFontScale@ImGui@@YAXM@Z";
-SetWindowPos                   :: (pos: *ImVec2, cond: Cond = .None) #foreign imgui_lib "?SetWindowPos@ImGui@@YAXAEBUImVec2@@H@Z";
-SetWindowPos                   :: (name: *u8, pos: *ImVec2, cond: Cond = .None) #foreign imgui_lib "?SetWindowPos@ImGui@@YAXPEBDAEBUImVec2@@H@Z";
-SetWindowSize                  :: (size: *ImVec2, cond: Cond = .None) #foreign imgui_lib "?SetWindowSize@ImGui@@YAXAEBUImVec2@@H@Z";
-SetWindowSize                  :: (name: *u8, size: *ImVec2, cond: Cond = .None) #foreign imgui_lib "?SetWindowSize@ImGui@@YAXPEBDAEBUImVec2@@H@Z";
+SetWindowPos                   :: (pos: ImVec2, cond: Cond = .None) {
+    _internal_SetWindowPos :: (pos: *ImVec2, cond: Cond) #foreign imgui_lib "?SetWindowPos@ImGui@@YAXAEBUImVec2@@H@Z";
+    _internal_SetWindowPos(*pos, cond);
+            }
+SetWindowPos                   :: (name: *u8, pos: ImVec2, cond: Cond = .None) {
+    _internal_SetWindowPos :: (name: *u8, pos: *ImVec2, cond: Cond) #foreign imgui_lib "?SetWindowPos@ImGui@@YAXPEBDAEBUImVec2@@H@Z";
+    _internal_SetWindowPos(name, *pos, cond);
+            }
+SetWindowSize                  :: (size: ImVec2, cond: Cond = .None) {
+    _internal_SetWindowSize :: (size: *ImVec2, cond: Cond) #foreign imgui_lib "?SetWindowSize@ImGui@@YAXAEBUImVec2@@H@Z";
+    _internal_SetWindowSize(*size, cond);
+            }
+SetWindowSize                  :: (name: *u8, size: ImVec2, cond: Cond = .None) {
+    _internal_SetWindowSize :: (name: *u8, size: *ImVec2, cond: Cond) #foreign imgui_lib "?SetWindowSize@ImGui@@YAXPEBDAEBUImVec2@@H@Z";
+    _internal_SetWindowSize(name, *size, cond);
+            }
 ShowAboutWindow                :: (p_open: *bool = null) #foreign imgui_lib "?ShowAboutWindow@ImGui@@YAXPEA_N@Z";
 ShowDemoWindow                 :: (p_open: *bool = null) #foreign imgui_lib "?ShowDemoWindow@ImGui@@YAXPEA_N@Z";
 ShowFontSelector               :: (label: *u8) #foreign imgui_lib "?ShowFontSelector@ImGui@@YAXPEBD@Z";
@@ -1146,7 +1209,10 @@ StyleColorsClassic             :: (dst: *Style = null) #foreign imgui_lib "?Styl
 StyleColorsDark                :: (dst: *Style = null) #foreign imgui_lib "?StyleColorsDark@ImGui@@YAXPEAUImGuiStyle@@@Z";
 StyleColorsLight               :: (dst: *Style = null) #foreign imgui_lib "?StyleColorsLight@ImGui@@YAXPEAUImGuiStyle@@@Z";
 Text                           :: (fmt: *u8, args: ..Any) #foreign imgui_lib "?Text@ImGui@@YAXPEBDZZ";
-TextColored                    :: (col: *ImVec4, fmt: *u8, args: ..Any) #foreign imgui_lib "?TextColored@ImGui@@YAXAEBUImVec4@@PEBDZZ";
+TextColored                    :: (col: ImVec4, fmt: *u8, args: ..Any) {
+    _internal_TextColored :: (col: *ImVec4, fmt: *u8, args: ..Any) #foreign imgui_lib "?TextColored@ImGui@@YAXAEBUImVec4@@PEBDZZ";
+    _internal_TextColored(*col, fmt, args);
+            }
 TextDisabled                   :: (fmt: *u8, args: ..Any) #foreign imgui_lib "?TextDisabled@ImGui@@YAXPEBDZZ";
 TextUnformatted                :: (text: *u8, text_end: string = "") {
     _internal_TextUnformatted :: (text: *u8, text_end: *u8) #foreign imgui_lib "?TextUnformatted@ImGui@@YAXPEBD0@Z";
@@ -1164,17 +1230,17 @@ TreePush                       :: (str_id: *u8) #foreign imgui_lib "?TreePush@Im
 TreePush                       :: (ptr_id: *void = null) #foreign imgui_lib "?TreePush@ImGui@@YAXPEBX@Z";
 Unindent                       :: (indent_w: float = 0.0) #foreign imgui_lib "?Unindent@ImGui@@YAXM@Z";
 UpdatePlatformWindows          :: () #foreign imgui_lib "?UpdatePlatformWindows@ImGui@@YAXXZ";
-VSliderFloat                   :: (label: *u8, size: *ImVec2, v: *float, v_min: float, v_max: float, format: string = "%.3f", flags: SliderFlags = .None) -> bool {
+VSliderFloat                   :: (label: *u8, size: ImVec2, v: *float, v_min: float, v_max: float, format: string = "%.3f", flags: SliderFlags = .None) -> bool {
     _internal_VSliderFloat :: (label: *u8, size: *ImVec2, v: *float, v_min: float, v_max: float, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?VSliderFloat@ImGui@@YA_NPEBDAEBUImVec2@@PEAMMM0H@Z";
-    return _internal_VSliderFloat(label, size, v, v_min, v_max, format.data, flags);
+    return _internal_VSliderFloat(label, *size, v, v_min, v_max, format.data, flags);
             }
-VSliderInt                     :: (label: *u8, size: *ImVec2, v: *s32, v_min: s32, v_max: s32, format: string = "%d", flags: SliderFlags = .None) -> bool {
+VSliderInt                     :: (label: *u8, size: ImVec2, v: *s32, v_min: s32, v_max: s32, format: string = "%d", flags: SliderFlags = .None) -> bool {
     _internal_VSliderInt :: (label: *u8, size: *ImVec2, v: *s32, v_min: s32, v_max: s32, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?VSliderInt@ImGui@@YA_NPEBDAEBUImVec2@@PEAHHH0H@Z";
-    return _internal_VSliderInt(label, size, v, v_min, v_max, format.data, flags);
+    return _internal_VSliderInt(label, *size, v, v_min, v_max, format.data, flags);
             }
-VSliderScalar                  :: (label: *u8, size: *ImVec2, data_type: DataType, p_data: *void, p_min: *void, p_max: *void, format: string = "", flags: SliderFlags = .None) -> bool {
+VSliderScalar                  :: (label: *u8, size: ImVec2, data_type: DataType, p_data: *void, p_min: *void, p_max: *void, format: string = "", flags: SliderFlags = .None) -> bool {
     _internal_VSliderScalar :: (label: *u8, size: *ImVec2, data_type: DataType, p_data: *void, p_min: *void, p_max: *void, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?VSliderScalar@ImGui@@YA_NPEBDAEBUImVec2@@HPEAXPEBX30H@Z";
-    return _internal_VSliderScalar(label, size, data_type, p_data, p_min, p_max, format.data, flags);
+    return _internal_VSliderScalar(label, *size, data_type, p_data, p_min, p_max, format.data, flags);
             }
 Value                          :: (prefix: *u8, b: bool) #foreign imgui_lib "?Value@ImGui@@YAXPEBD_N@Z";
 Value                          :: (prefix: *u8, v: s32) #foreign imgui_lib "?Value@ImGui@@YAXPEBDH@Z";
@@ -1219,7 +1285,10 @@ ImDrawData :: struct {
     OwnerViewport: *Viewport;
 
     DeIndexAllBuffers     :: (self: *ImDrawData) #foreign imgui_lib "?DeIndexAllBuffers@ImDrawData@@QEAAXXZ";
-    ScaleClipRects        :: (self: *ImDrawData, fb_scale: *ImVec2) #foreign imgui_lib "?ScaleClipRects@ImDrawData@@QEAAXAEBUImVec2@@@Z";
+    ScaleClipRects        :: (self: *ImDrawData, fb_scale: ImVec2) {
+    _internal_ScaleClipRects :: (self: *ImDrawData, fb_scale: *ImVec2) #foreign imgui_lib "?ScaleClipRects@ImDrawData@@QEAAXAEBUImVec2@@@Z";
+    _internal_ScaleClipRects(self, *fb_scale);
+            }
 }
 
 ImDrawList :: struct {
@@ -1238,49 +1307,112 @@ ImDrawList :: struct {
     _CmdHeader: ImDrawCmd;
     _Splitter: ImDrawListSplitter;
 
-    AddBezierCurve              :: (self: *ImDrawList, p1: *ImVec2, p2: *ImVec2, p3: *ImVec2, p4: *ImVec2, col: u32, thickness: float, num_segments: s32 = 0) #foreign imgui_lib "?AddBezierCurve@ImDrawList@@QEAAXAEBUImVec2@@000IMH@Z";
-    AddCircle                   :: (self: *ImDrawList, center: *ImVec2, radius: float, col: u32, num_segments: s32 = 0, thickness: float = 1.0) #foreign imgui_lib "?AddCircle@ImDrawList@@QEAAXAEBUImVec2@@MIHM@Z";
-    AddCircleFilled             :: (self: *ImDrawList, center: *ImVec2, radius: float, col: u32, num_segments: s32 = 0) #foreign imgui_lib "?AddCircleFilled@ImDrawList@@QEAAXAEBUImVec2@@MIH@Z";
+    AddBezierCurve              :: (self: *ImDrawList, p1: ImVec2, p2: ImVec2, p3: ImVec2, p4: ImVec2, col: u32, thickness: float, num_segments: s32 = 0) {
+    _internal_AddBezierCurve :: (self: *ImDrawList, p1: *ImVec2, p2: *ImVec2, p3: *ImVec2, p4: *ImVec2, col: u32, thickness: float, num_segments: s32) #foreign imgui_lib "?AddBezierCurve@ImDrawList@@QEAAXAEBUImVec2@@000IMH@Z";
+    _internal_AddBezierCurve(self, *p1, *p2, *p3, *p4, col, thickness, num_segments);
+            }
+    AddCircle                   :: (self: *ImDrawList, center: ImVec2, radius: float, col: u32, num_segments: s32 = 0, thickness: float = 1.0) {
+    _internal_AddCircle :: (self: *ImDrawList, center: *ImVec2, radius: float, col: u32, num_segments: s32, thickness: float) #foreign imgui_lib "?AddCircle@ImDrawList@@QEAAXAEBUImVec2@@MIHM@Z";
+    _internal_AddCircle(self, *center, radius, col, num_segments, thickness);
+            }
+    AddCircleFilled             :: (self: *ImDrawList, center: ImVec2, radius: float, col: u32, num_segments: s32 = 0) {
+    _internal_AddCircleFilled :: (self: *ImDrawList, center: *ImVec2, radius: float, col: u32, num_segments: s32) #foreign imgui_lib "?AddCircleFilled@ImDrawList@@QEAAXAEBUImVec2@@MIH@Z";
+    _internal_AddCircleFilled(self, *center, radius, col, num_segments);
+            }
     AddConvexPolyFilled         :: (self: *ImDrawList, points: *ImVec2, num_points: s32, col: u32) #foreign imgui_lib "?AddConvexPolyFilled@ImDrawList@@QEAAXPEBUImVec2@@HI@Z";
     AddDrawCmd                  :: (self: *ImDrawList) #foreign imgui_lib "?AddDrawCmd@ImDrawList@@QEAAXXZ";
-    AddImage                    :: (self: *ImDrawList, user_texture_id: ImTextureID, p_min: *ImVec2, p_max: *ImVec2, uv_min: ImVec2 = ImVec2.{0,0}, uv_max: ImVec2 = ImVec2.{1,1}, col: u32 = ((cast(u32)(255)<<24)|(cast(u32)(255)<<16)|(cast(u32)(255)<<8)|(cast(u32)(255)<<0))) {
+    AddImage                    :: (self: *ImDrawList, user_texture_id: ImTextureID, p_min: ImVec2, p_max: ImVec2, uv_min: ImVec2 = ImVec2.{0,0}, uv_max: ImVec2 = ImVec2.{1,1}, col: u32 = ((cast(u32)(255)<<24)|(cast(u32)(255)<<16)|(cast(u32)(255)<<8)|(cast(u32)(255)<<0))) {
     _internal_AddImage :: (self: *ImDrawList, user_texture_id: ImTextureID, p_min: *ImVec2, p_max: *ImVec2, uv_min: *ImVec2, uv_max: *ImVec2, col: u32) #foreign imgui_lib "?AddImage@ImDrawList@@QEAAXPEAXAEBUImVec2@@111I@Z";
-    _internal_AddImage(self, user_texture_id, p_min, p_max, *uv_min, *uv_max, col);
+    _internal_AddImage(self, user_texture_id, *p_min, *p_max, *uv_min, *uv_max, col);
             }
-    AddImageQuad                :: (self: *ImDrawList, user_texture_id: ImTextureID, p1: *ImVec2, p2: *ImVec2, p3: *ImVec2, p4: *ImVec2, uv1: ImVec2 = ImVec2.{0,0}, uv2: ImVec2 = ImVec2.{1,0}, uv3: ImVec2 = ImVec2.{1,1}, uv4: ImVec2 = ImVec2.{0,1}, col: u32 = ((cast(u32)(255)<<24)|(cast(u32)(255)<<16)|(cast(u32)(255)<<8)|(cast(u32)(255)<<0))) {
+    AddImageQuad                :: (self: *ImDrawList, user_texture_id: ImTextureID, p1: ImVec2, p2: ImVec2, p3: ImVec2, p4: ImVec2, uv1: ImVec2 = ImVec2.{0,0}, uv2: ImVec2 = ImVec2.{1,0}, uv3: ImVec2 = ImVec2.{1,1}, uv4: ImVec2 = ImVec2.{0,1}, col: u32 = ((cast(u32)(255)<<24)|(cast(u32)(255)<<16)|(cast(u32)(255)<<8)|(cast(u32)(255)<<0))) {
     _internal_AddImageQuad :: (self: *ImDrawList, user_texture_id: ImTextureID, p1: *ImVec2, p2: *ImVec2, p3: *ImVec2, p4: *ImVec2, uv1: *ImVec2, uv2: *ImVec2, uv3: *ImVec2, uv4: *ImVec2, col: u32) #foreign imgui_lib "?AddImageQuad@ImDrawList@@QEAAXPEAXAEBUImVec2@@1111111I@Z";
-    _internal_AddImageQuad(self, user_texture_id, p1, p2, p3, p4, *uv1, *uv2, *uv3, *uv4, col);
+    _internal_AddImageQuad(self, user_texture_id, *p1, *p2, *p3, *p4, *uv1, *uv2, *uv3, *uv4, col);
             }
-    AddImageRounded             :: (self: *ImDrawList, user_texture_id: ImTextureID, p_min: *ImVec2, p_max: *ImVec2, uv_min: *ImVec2, uv_max: *ImVec2, col: u32, rounding: float, rounding_corners: ImDrawCornerFlags = .All) #foreign imgui_lib "?AddImageRounded@ImDrawList@@QEAAXPEAXAEBUImVec2@@111IMH@Z";
-    AddLine                     :: (self: *ImDrawList, p1: *ImVec2, p2: *ImVec2, col: u32, thickness: float = 1.0) #foreign imgui_lib "?AddLine@ImDrawList@@QEAAXAEBUImVec2@@0IM@Z";
-    AddNgon                     :: (self: *ImDrawList, center: *ImVec2, radius: float, col: u32, num_segments: s32, thickness: float = 1.0) #foreign imgui_lib "?AddNgon@ImDrawList@@QEAAXAEBUImVec2@@MIHM@Z";
-    AddNgonFilled               :: (self: *ImDrawList, center: *ImVec2, radius: float, col: u32, num_segments: s32) #foreign imgui_lib "?AddNgonFilled@ImDrawList@@QEAAXAEBUImVec2@@MIH@Z";
+    AddImageRounded             :: (self: *ImDrawList, user_texture_id: ImTextureID, p_min: ImVec2, p_max: ImVec2, uv_min: ImVec2, uv_max: ImVec2, col: u32, rounding: float, rounding_corners: ImDrawCornerFlags = .All) {
+    _internal_AddImageRounded :: (self: *ImDrawList, user_texture_id: ImTextureID, p_min: *ImVec2, p_max: *ImVec2, uv_min: *ImVec2, uv_max: *ImVec2, col: u32, rounding: float, rounding_corners: ImDrawCornerFlags) #foreign imgui_lib "?AddImageRounded@ImDrawList@@QEAAXPEAXAEBUImVec2@@111IMH@Z";
+    _internal_AddImageRounded(self, user_texture_id, *p_min, *p_max, *uv_min, *uv_max, col, rounding, rounding_corners);
+            }
+    AddLine                     :: (self: *ImDrawList, p1: ImVec2, p2: ImVec2, col: u32, thickness: float = 1.0) {
+    _internal_AddLine :: (self: *ImDrawList, p1: *ImVec2, p2: *ImVec2, col: u32, thickness: float) #foreign imgui_lib "?AddLine@ImDrawList@@QEAAXAEBUImVec2@@0IM@Z";
+    _internal_AddLine(self, *p1, *p2, col, thickness);
+            }
+    AddNgon                     :: (self: *ImDrawList, center: ImVec2, radius: float, col: u32, num_segments: s32, thickness: float = 1.0) {
+    _internal_AddNgon :: (self: *ImDrawList, center: *ImVec2, radius: float, col: u32, num_segments: s32, thickness: float) #foreign imgui_lib "?AddNgon@ImDrawList@@QEAAXAEBUImVec2@@MIHM@Z";
+    _internal_AddNgon(self, *center, radius, col, num_segments, thickness);
+            }
+    AddNgonFilled               :: (self: *ImDrawList, center: ImVec2, radius: float, col: u32, num_segments: s32) {
+    _internal_AddNgonFilled :: (self: *ImDrawList, center: *ImVec2, radius: float, col: u32, num_segments: s32) #foreign imgui_lib "?AddNgonFilled@ImDrawList@@QEAAXAEBUImVec2@@MIH@Z";
+    _internal_AddNgonFilled(self, *center, radius, col, num_segments);
+            }
     AddPolyline                 :: (self: *ImDrawList, points: *ImVec2, num_points: s32, col: u32, closed: bool, thickness: float) #foreign imgui_lib "?AddPolyline@ImDrawList@@QEAAXPEBUImVec2@@HI_NM@Z";
-    AddQuad                     :: (self: *ImDrawList, p1: *ImVec2, p2: *ImVec2, p3: *ImVec2, p4: *ImVec2, col: u32, thickness: float = 1.0) #foreign imgui_lib "?AddQuad@ImDrawList@@QEAAXAEBUImVec2@@000IM@Z";
-    AddQuadFilled               :: (self: *ImDrawList, p1: *ImVec2, p2: *ImVec2, p3: *ImVec2, p4: *ImVec2, col: u32) #foreign imgui_lib "?AddQuadFilled@ImDrawList@@QEAAXAEBUImVec2@@000I@Z";
-    AddRect                     :: (self: *ImDrawList, p_min: *ImVec2, p_max: *ImVec2, col: u32, rounding: float = 0.0, rounding_corners: ImDrawCornerFlags = .All, thickness: float = 1.0) #foreign imgui_lib "?AddRect@ImDrawList@@QEAAXAEBUImVec2@@0IMHM@Z";
-    AddRectFilled               :: (self: *ImDrawList, p_min: *ImVec2, p_max: *ImVec2, col: u32, rounding: float = 0.0, rounding_corners: ImDrawCornerFlags = .All) #foreign imgui_lib "?AddRectFilled@ImDrawList@@QEAAXAEBUImVec2@@0IMH@Z";
-    AddRectFilledMultiColor     :: (self: *ImDrawList, p_min: *ImVec2, p_max: *ImVec2, col_upr_left: u32, col_upr_right: u32, col_bot_right: u32, col_bot_left: u32) #foreign imgui_lib "?AddRectFilledMultiColor@ImDrawList@@QEAAXAEBUImVec2@@0IIII@Z";
-    AddText                     :: (self: *ImDrawList, pos: *ImVec2, col: u32, text_begin: *u8, text_end: string = "") {
+    AddQuad                     :: (self: *ImDrawList, p1: ImVec2, p2: ImVec2, p3: ImVec2, p4: ImVec2, col: u32, thickness: float = 1.0) {
+    _internal_AddQuad :: (self: *ImDrawList, p1: *ImVec2, p2: *ImVec2, p3: *ImVec2, p4: *ImVec2, col: u32, thickness: float) #foreign imgui_lib "?AddQuad@ImDrawList@@QEAAXAEBUImVec2@@000IM@Z";
+    _internal_AddQuad(self, *p1, *p2, *p3, *p4, col, thickness);
+            }
+    AddQuadFilled               :: (self: *ImDrawList, p1: ImVec2, p2: ImVec2, p3: ImVec2, p4: ImVec2, col: u32) {
+    _internal_AddQuadFilled :: (self: *ImDrawList, p1: *ImVec2, p2: *ImVec2, p3: *ImVec2, p4: *ImVec2, col: u32) #foreign imgui_lib "?AddQuadFilled@ImDrawList@@QEAAXAEBUImVec2@@000I@Z";
+    _internal_AddQuadFilled(self, *p1, *p2, *p3, *p4, col);
+            }
+    AddRect                     :: (self: *ImDrawList, p_min: ImVec2, p_max: ImVec2, col: u32, rounding: float = 0.0, rounding_corners: ImDrawCornerFlags = .All, thickness: float = 1.0) {
+    _internal_AddRect :: (self: *ImDrawList, p_min: *ImVec2, p_max: *ImVec2, col: u32, rounding: float, rounding_corners: ImDrawCornerFlags, thickness: float) #foreign imgui_lib "?AddRect@ImDrawList@@QEAAXAEBUImVec2@@0IMHM@Z";
+    _internal_AddRect(self, *p_min, *p_max, col, rounding, rounding_corners, thickness);
+            }
+    AddRectFilled               :: (self: *ImDrawList, p_min: ImVec2, p_max: ImVec2, col: u32, rounding: float = 0.0, rounding_corners: ImDrawCornerFlags = .All) {
+    _internal_AddRectFilled :: (self: *ImDrawList, p_min: *ImVec2, p_max: *ImVec2, col: u32, rounding: float, rounding_corners: ImDrawCornerFlags) #foreign imgui_lib "?AddRectFilled@ImDrawList@@QEAAXAEBUImVec2@@0IMH@Z";
+    _internal_AddRectFilled(self, *p_min, *p_max, col, rounding, rounding_corners);
+            }
+    AddRectFilledMultiColor     :: (self: *ImDrawList, p_min: ImVec2, p_max: ImVec2, col_upr_left: u32, col_upr_right: u32, col_bot_right: u32, col_bot_left: u32) {
+    _internal_AddRectFilledMultiColor :: (self: *ImDrawList, p_min: *ImVec2, p_max: *ImVec2, col_upr_left: u32, col_upr_right: u32, col_bot_right: u32, col_bot_left: u32) #foreign imgui_lib "?AddRectFilledMultiColor@ImDrawList@@QEAAXAEBUImVec2@@0IIII@Z";
+    _internal_AddRectFilledMultiColor(self, *p_min, *p_max, col_upr_left, col_upr_right, col_bot_right, col_bot_left);
+            }
+    AddText                     :: (self: *ImDrawList, pos: ImVec2, col: u32, text_begin: *u8, text_end: string = "") {
     _internal_AddText :: (self: *ImDrawList, pos: *ImVec2, col: u32, text_begin: *u8, text_end: *u8) #foreign imgui_lib "?AddText@ImDrawList@@QEAAXAEBUImVec2@@IPEBD1@Z";
-    _internal_AddText(self, pos, col, text_begin, text_end.data);
+    _internal_AddText(self, *pos, col, text_begin, text_end.data);
             }
-    AddText                     :: (self: *ImDrawList, font: *ImFont, font_size: float, pos: *ImVec2, col: u32, text_begin: *u8, text_end: string = "", wrap_width: float = 0.0, cpu_fine_clip_rect: *ImVec4 = null) {
+    AddText                     :: (self: *ImDrawList, font: *ImFont, font_size: float, pos: ImVec2, col: u32, text_begin: *u8, text_end: string = "", wrap_width: float = 0.0, cpu_fine_clip_rect: *ImVec4 = null) {
     _internal_AddText :: (self: *ImDrawList, font: *ImFont, font_size: float, pos: *ImVec2, col: u32, text_begin: *u8, text_end: *u8, wrap_width: float, cpu_fine_clip_rect: *ImVec4) #foreign imgui_lib "?AddText@ImDrawList@@QEAAXPEBUImFont@@MAEBUImVec2@@IPEBD2MPEBUImVec4@@@Z";
-    _internal_AddText(self, font, font_size, pos, col, text_begin, text_end.data, wrap_width, cpu_fine_clip_rect);
+    _internal_AddText(self, font, font_size, *pos, col, text_begin, text_end.data, wrap_width, cpu_fine_clip_rect);
             }
-    AddTriangle                 :: (self: *ImDrawList, p1: *ImVec2, p2: *ImVec2, p3: *ImVec2, col: u32, thickness: float = 1.0) #foreign imgui_lib "?AddTriangle@ImDrawList@@QEAAXAEBUImVec2@@00IM@Z";
-    AddTriangleFilled           :: (self: *ImDrawList, p1: *ImVec2, p2: *ImVec2, p3: *ImVec2, col: u32) #foreign imgui_lib "?AddTriangleFilled@ImDrawList@@QEAAXAEBUImVec2@@00I@Z";
+    AddTriangle                 :: (self: *ImDrawList, p1: ImVec2, p2: ImVec2, p3: ImVec2, col: u32, thickness: float = 1.0) {
+    _internal_AddTriangle :: (self: *ImDrawList, p1: *ImVec2, p2: *ImVec2, p3: *ImVec2, col: u32, thickness: float) #foreign imgui_lib "?AddTriangle@ImDrawList@@QEAAXAEBUImVec2@@00IM@Z";
+    _internal_AddTriangle(self, *p1, *p2, *p3, col, thickness);
+            }
+    AddTriangleFilled           :: (self: *ImDrawList, p1: ImVec2, p2: ImVec2, p3: ImVec2, col: u32) {
+    _internal_AddTriangleFilled :: (self: *ImDrawList, p1: *ImVec2, p2: *ImVec2, p3: *ImVec2, col: u32) #foreign imgui_lib "?AddTriangleFilled@ImDrawList@@QEAAXAEBUImVec2@@00I@Z";
+    _internal_AddTriangleFilled(self, *p1, *p2, *p3, col);
+            }
     CloneOutput                 :: (self: *ImDrawList) -> *ImDrawList #foreign imgui_lib "?CloneOutput@ImDrawList@@QEBAPEAU1@XZ";
-    PathArcTo                   :: (self: *ImDrawList, center: *ImVec2, radius: float, a_min: float, a_max: float, num_segments: s32 = 10) #foreign imgui_lib "?PathArcTo@ImDrawList@@QEAAXAEBUImVec2@@MMMH@Z";
-    PathArcToFast               :: (self: *ImDrawList, center: *ImVec2, radius: float, a_min_of_12: s32, a_max_of_12: s32) #foreign imgui_lib "?PathArcToFast@ImDrawList@@QEAAXAEBUImVec2@@MHH@Z";
-    PathBezierCurveTo           :: (self: *ImDrawList, p2: *ImVec2, p3: *ImVec2, p4: *ImVec2, num_segments: s32 = 0) #foreign imgui_lib "?PathBezierCurveTo@ImDrawList@@QEAAXAEBUImVec2@@00H@Z";
-    PathRect                    :: (self: *ImDrawList, rect_min: *ImVec2, rect_max: *ImVec2, rounding: float = 0.0, rounding_corners: ImDrawCornerFlags = .All) #foreign imgui_lib "?PathRect@ImDrawList@@QEAAXAEBUImVec2@@0MH@Z";
+    PathArcTo                   :: (self: *ImDrawList, center: ImVec2, radius: float, a_min: float, a_max: float, num_segments: s32 = 10) {
+    _internal_PathArcTo :: (self: *ImDrawList, center: *ImVec2, radius: float, a_min: float, a_max: float, num_segments: s32) #foreign imgui_lib "?PathArcTo@ImDrawList@@QEAAXAEBUImVec2@@MMMH@Z";
+    _internal_PathArcTo(self, *center, radius, a_min, a_max, num_segments);
+            }
+    PathArcToFast               :: (self: *ImDrawList, center: ImVec2, radius: float, a_min_of_12: s32, a_max_of_12: s32) {
+    _internal_PathArcToFast :: (self: *ImDrawList, center: *ImVec2, radius: float, a_min_of_12: s32, a_max_of_12: s32) #foreign imgui_lib "?PathArcToFast@ImDrawList@@QEAAXAEBUImVec2@@MHH@Z";
+    _internal_PathArcToFast(self, *center, radius, a_min_of_12, a_max_of_12);
+            }
+    PathBezierCurveTo           :: (self: *ImDrawList, p2: ImVec2, p3: ImVec2, p4: ImVec2, num_segments: s32 = 0) {
+    _internal_PathBezierCurveTo :: (self: *ImDrawList, p2: *ImVec2, p3: *ImVec2, p4: *ImVec2, num_segments: s32) #foreign imgui_lib "?PathBezierCurveTo@ImDrawList@@QEAAXAEBUImVec2@@00H@Z";
+    _internal_PathBezierCurveTo(self, *p2, *p3, *p4, num_segments);
+            }
+    PathRect                    :: (self: *ImDrawList, rect_min: ImVec2, rect_max: ImVec2, rounding: float = 0.0, rounding_corners: ImDrawCornerFlags = .All) {
+    _internal_PathRect :: (self: *ImDrawList, rect_min: *ImVec2, rect_max: *ImVec2, rounding: float, rounding_corners: ImDrawCornerFlags) #foreign imgui_lib "?PathRect@ImDrawList@@QEAAXAEBUImVec2@@0MH@Z";
+    _internal_PathRect(self, *rect_min, *rect_max, rounding, rounding_corners);
+            }
     PopClipRect                 :: (self: *ImDrawList) #foreign imgui_lib "?PopClipRect@ImDrawList@@QEAAXXZ";
     PopTextureID                :: (self: *ImDrawList) #foreign imgui_lib "?PopTextureID@ImDrawList@@QEAAXXZ";
-    PrimQuadUV                  :: (self: *ImDrawList, a: *ImVec2, b: *ImVec2, c: *ImVec2, d: *ImVec2, uv_a: *ImVec2, uv_b: *ImVec2, uv_c: *ImVec2, uv_d: *ImVec2, col: u32) #foreign imgui_lib "?PrimQuadUV@ImDrawList@@QEAAXAEBUImVec2@@0000000I@Z";
-    PrimRect                    :: (self: *ImDrawList, a: *ImVec2, b: *ImVec2, col: u32) #foreign imgui_lib "?PrimRect@ImDrawList@@QEAAXAEBUImVec2@@0I@Z";
-    PrimRectUV                  :: (self: *ImDrawList, a: *ImVec2, b: *ImVec2, uv_a: *ImVec2, uv_b: *ImVec2, col: u32) #foreign imgui_lib "?PrimRectUV@ImDrawList@@QEAAXAEBUImVec2@@000I@Z";
+    PrimQuadUV                  :: (self: *ImDrawList, a: ImVec2, b: ImVec2, c: ImVec2, d: ImVec2, uv_a: ImVec2, uv_b: ImVec2, uv_c: ImVec2, uv_d: ImVec2, col: u32) {
+    _internal_PrimQuadUV :: (self: *ImDrawList, a: *ImVec2, b: *ImVec2, c: *ImVec2, d: *ImVec2, uv_a: *ImVec2, uv_b: *ImVec2, uv_c: *ImVec2, uv_d: *ImVec2, col: u32) #foreign imgui_lib "?PrimQuadUV@ImDrawList@@QEAAXAEBUImVec2@@0000000I@Z";
+    _internal_PrimQuadUV(self, *a, *b, *c, *d, *uv_a, *uv_b, *uv_c, *uv_d, col);
+            }
+    PrimRect                    :: (self: *ImDrawList, a: ImVec2, b: ImVec2, col: u32) {
+    _internal_PrimRect :: (self: *ImDrawList, a: *ImVec2, b: *ImVec2, col: u32) #foreign imgui_lib "?PrimRect@ImDrawList@@QEAAXAEBUImVec2@@0I@Z";
+    _internal_PrimRect(self, *a, *b, col);
+            }
+    PrimRectUV                  :: (self: *ImDrawList, a: ImVec2, b: ImVec2, uv_a: ImVec2, uv_b: ImVec2, col: u32) {
+    _internal_PrimRectUV :: (self: *ImDrawList, a: *ImVec2, b: *ImVec2, uv_a: *ImVec2, uv_b: *ImVec2, col: u32) #foreign imgui_lib "?PrimRectUV@ImDrawList@@QEAAXAEBUImVec2@@000I@Z";
+    _internal_PrimRectUV(self, *a, *b, *uv_a, *uv_b, col);
+            }
     PrimReserve                 :: (self: *ImDrawList, idx_count: s32, vtx_count: s32) #foreign imgui_lib "?PrimReserve@ImDrawList@@QEAAXHH@Z";
     PrimUnreserve               :: (self: *ImDrawList, idx_count: s32, vtx_count: s32) #foreign imgui_lib "?PrimUnreserve@ImDrawList@@QEAAXHH@Z";
     PushClipRect                :: (self: *ImDrawList, clip_rect_min: ImVec2, clip_rect_max: ImVec2, intersect_with_current_clip_rect: bool = false) #foreign imgui_lib "?PushClipRect@ImDrawList@@QEAAXUImVec2@@0_N@Z";
@@ -1354,7 +1486,10 @@ ImFont :: struct {
     GrowIndex                 :: (self: *ImFont, new_size: s32) #foreign imgui_lib "?GrowIndex@ImFont@@QEAAXH@Z";
     IsGlyphRangeUnused        :: (self: *ImFont, c_begin: u32, c_last: u32) -> bool #foreign imgui_lib "?IsGlyphRangeUnused@ImFont@@QEAA_NII@Z";
     RenderChar                :: (self: *ImFont, draw_list: *ImDrawList, size: float, pos: ImVec2, col: u32, c: ImWchar) #foreign imgui_lib "?RenderChar@ImFont@@QEBAXPEAUImDrawList@@MUImVec2@@IG@Z";
-    RenderText                :: (self: *ImFont, draw_list: *ImDrawList, size: float, pos: ImVec2, col: u32, clip_rect: *ImVec4, text_begin: *u8, text_end: *u8, wrap_width: float = 0.0, cpu_fine_clip: bool = false) #foreign imgui_lib "?RenderText@ImFont@@QEBAXPEAUImDrawList@@MUImVec2@@IAEBUImVec4@@PEBD3M_N@Z";
+    RenderText                :: (self: *ImFont, draw_list: *ImDrawList, size: float, pos: ImVec2, col: u32, clip_rect: ImVec4, text_begin: *u8, text_end: *u8, wrap_width: float = 0.0, cpu_fine_clip: bool = false) {
+    _internal_RenderText :: (self: *ImFont, draw_list: *ImDrawList, size: float, pos: ImVec2, col: u32, clip_rect: *ImVec4, text_begin: *u8, text_end: *u8, wrap_width: float, cpu_fine_clip: bool) #foreign imgui_lib "?RenderText@ImFont@@QEBAXPEAUImDrawList@@MUImVec2@@IAEBUImVec4@@PEBD3M_N@Z";
+    _internal_RenderText(self, draw_list, size, pos, col, *clip_rect, text_begin, text_end, wrap_width, cpu_fine_clip);
+            }
     SetFallbackChar           :: (self: *ImFont, c: ImWchar) #foreign imgui_lib "?SetFallbackChar@ImFont@@QEAAXG@Z";
     SetGlyphVisible           :: (self: *ImFont, c: ImWchar, visible: bool) #foreign imgui_lib "?SetGlyphVisible@ImFont@@QEAAXG_N@Z";
 }
@@ -1769,6 +1904,9 @@ Viewport :: struct {
     PlatformRequestMove: bool;
     PlatformRequestResize: bool;
     PlatformRequestClose: bool;
+    GetCenter      :: (using self: *Viewport) -> ImVec2 { return make_ImVec2(Pos.x + Size.x * 0.5, Pos.y + Size.y * 0.5); }
+    GetWorkPos     :: (using self: *Viewport) -> ImVec2 { return make_ImVec2(Pos.x + WorkOffsetMin.x, Pos.y + WorkOffsetMin.y); }
+    GetWorkSize    :: (using self: *Viewport) -> ImVec2 { return make_ImVec2(Size.x - WorkOffsetMin.x + WorkOffsetMax.x, Size.y - WorkOffsetMin.y + WorkOffsetMax.y); } // This not clamped
 }
 
 WindowClass :: struct {
@@ -1843,6 +1981,7 @@ TreeNode :: (fmt: string, args: ..Any) -> bool {
     txt := tprintz(fmt, ..args);    // Note that tprintz appends a null byte at the end!
     return TreeNode(txt.data);
 }
+
 
 
 #scope_file
