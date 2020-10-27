@@ -762,16 +762,16 @@ DragFloat                      :: (label: *u8, v: *float, v_speed: float = 1.0, 
     return _internal_DragFloat(label, v, v_speed, v_min, v_max, format.data, flags);
             }
 DragFloat2                     :: (label: *u8, v: [2]float, v_speed: float = 1.0, v_min: float = 0.0, v_max: float = 0.0, format: string = "%.3f", flags: SliderFlags = .None) -> bool {
-    _internal_DragFloat2 :: (label: *u8, v: [2]float, v_speed: float, v_min: float, v_max: float, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?DragFloat2@ImGui@@YA_NPEBDQEAMMMM0H@Z";
-    return _internal_DragFloat2(label, v, v_speed, v_min, v_max, format.data, flags);
+    _internal_DragFloat2 :: (label: *u8, v: *float, v_speed: float, v_min: float, v_max: float, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?DragFloat2@ImGui@@YA_NPEBDQEAMMMM0H@Z";
+    return _internal_DragFloat2(label, v.data, v_speed, v_min, v_max, format.data, flags);
             }
 DragFloat3                     :: (label: *u8, v: [3]float, v_speed: float = 1.0, v_min: float = 0.0, v_max: float = 0.0, format: string = "%.3f", flags: SliderFlags = .None) -> bool {
-    _internal_DragFloat3 :: (label: *u8, v: [3]float, v_speed: float, v_min: float, v_max: float, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?DragFloat3@ImGui@@YA_NPEBDQEAMMMM0H@Z";
-    return _internal_DragFloat3(label, v, v_speed, v_min, v_max, format.data, flags);
+    _internal_DragFloat3 :: (label: *u8, v: *float, v_speed: float, v_min: float, v_max: float, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?DragFloat3@ImGui@@YA_NPEBDQEAMMMM0H@Z";
+    return _internal_DragFloat3(label, v.data, v_speed, v_min, v_max, format.data, flags);
             }
 DragFloat4                     :: (label: *u8, v: [4]float, v_speed: float = 1.0, v_min: float = 0.0, v_max: float = 0.0, format: string = "%.3f", flags: SliderFlags = .None) -> bool {
-    _internal_DragFloat4 :: (label: *u8, v: [4]float, v_speed: float, v_min: float, v_max: float, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?DragFloat4@ImGui@@YA_NPEBDQEAMMMM0H@Z";
-    return _internal_DragFloat4(label, v, v_speed, v_min, v_max, format.data, flags);
+    _internal_DragFloat4 :: (label: *u8, v: *float, v_speed: float, v_min: float, v_max: float, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?DragFloat4@ImGui@@YA_NPEBDQEAMMMM0H@Z";
+    return _internal_DragFloat4(label, v.data, v_speed, v_min, v_max, format.data, flags);
             }
 DragFloatRange2                :: (label: *u8, v_current_min: *float, v_current_max: *float, v_speed: float = 1.0, v_min: float = 0.0, v_max: float = 0.0, format: string = "%.3f", format_max: string = "", flags: SliderFlags = .None) -> bool {
     _internal_DragFloatRange2 :: (label: *u8, v_current_min: *float, v_current_max: *float, v_speed: float, v_min: float, v_max: float, format: *u8, format_max: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?DragFloatRange2@ImGui@@YA_NPEBDPEAM1MMM00H@Z";
@@ -782,16 +782,16 @@ DragInt                        :: (label: *u8, v: *s32, v_speed: float = 1.0, v_
     return _internal_DragInt(label, v, v_speed, v_min, v_max, format.data, flags);
             }
 DragInt2                       :: (label: *u8, v: [2]s32, v_speed: float = 1.0, v_min: s32 = 0, v_max: s32 = 0, format: string = "%d", flags: SliderFlags = .None) -> bool {
-    _internal_DragInt2 :: (label: *u8, v: [2]s32, v_speed: float, v_min: s32, v_max: s32, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?DragInt2@ImGui@@YA_NPEBDQEAHMHH0H@Z";
-    return _internal_DragInt2(label, v, v_speed, v_min, v_max, format.data, flags);
+    _internal_DragInt2 :: (label: *u8, v: *s32, v_speed: float, v_min: s32, v_max: s32, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?DragInt2@ImGui@@YA_NPEBDQEAHMHH0H@Z";
+    return _internal_DragInt2(label, v.data, v_speed, v_min, v_max, format.data, flags);
             }
 DragInt3                       :: (label: *u8, v: [3]s32, v_speed: float = 1.0, v_min: s32 = 0, v_max: s32 = 0, format: string = "%d", flags: SliderFlags = .None) -> bool {
-    _internal_DragInt3 :: (label: *u8, v: [3]s32, v_speed: float, v_min: s32, v_max: s32, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?DragInt3@ImGui@@YA_NPEBDQEAHMHH0H@Z";
-    return _internal_DragInt3(label, v, v_speed, v_min, v_max, format.data, flags);
+    _internal_DragInt3 :: (label: *u8, v: *s32, v_speed: float, v_min: s32, v_max: s32, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?DragInt3@ImGui@@YA_NPEBDQEAHMHH0H@Z";
+    return _internal_DragInt3(label, v.data, v_speed, v_min, v_max, format.data, flags);
             }
 DragInt4                       :: (label: *u8, v: [4]s32, v_speed: float = 1.0, v_min: s32 = 0, v_max: s32 = 0, format: string = "%d", flags: SliderFlags = .None) -> bool {
-    _internal_DragInt4 :: (label: *u8, v: [4]s32, v_speed: float, v_min: s32, v_max: s32, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?DragInt4@ImGui@@YA_NPEBDQEAHMHH0H@Z";
-    return _internal_DragInt4(label, v, v_speed, v_min, v_max, format.data, flags);
+    _internal_DragInt4 :: (label: *u8, v: *s32, v_speed: float, v_min: s32, v_max: s32, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?DragInt4@ImGui@@YA_NPEBDQEAHMHH0H@Z";
+    return _internal_DragInt4(label, v.data, v_speed, v_min, v_max, format.data, flags);
             }
 DragIntRange2                  :: (label: *u8, v_current_min: *s32, v_current_max: *s32, v_speed: float = 1.0, v_min: s32 = 0, v_max: s32 = 0, format: string = "%d", format_max: string = "", flags: SliderFlags = .None) -> bool {
     _internal_DragIntRange2 :: (label: *u8, v_current_min: *s32, v_current_max: *s32, v_speed: float, v_min: s32, v_max: s32, format: *u8, format_max: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?DragIntRange2@ImGui@@YA_NPEBDPEAH1MHH00H@Z";
@@ -899,16 +899,16 @@ InputFloat                     :: (label: *u8, v: *float, step: float = 0.0, ste
     return _internal_InputFloat(label, v, step, step_fast, format.data, flags);
             }
 InputFloat2                    :: (label: *u8, v: [2]float, format: string = "%.3f", flags: InputTextFlags = .None) -> bool {
-    _internal_InputFloat2 :: (label: *u8, v: [2]float, format: *u8, flags: InputTextFlags) -> bool #foreign imgui_lib "?InputFloat2@ImGui@@YA_NPEBDQEAM0H@Z";
-    return _internal_InputFloat2(label, v, format.data, flags);
+    _internal_InputFloat2 :: (label: *u8, v: *float, format: *u8, flags: InputTextFlags) -> bool #foreign imgui_lib "?InputFloat2@ImGui@@YA_NPEBDQEAM0H@Z";
+    return _internal_InputFloat2(label, v.data, format.data, flags);
             }
 InputFloat3                    :: (label: *u8, v: [3]float, format: string = "%.3f", flags: InputTextFlags = .None) -> bool {
-    _internal_InputFloat3 :: (label: *u8, v: [3]float, format: *u8, flags: InputTextFlags) -> bool #foreign imgui_lib "?InputFloat3@ImGui@@YA_NPEBDQEAM0H@Z";
-    return _internal_InputFloat3(label, v, format.data, flags);
+    _internal_InputFloat3 :: (label: *u8, v: *float, format: *u8, flags: InputTextFlags) -> bool #foreign imgui_lib "?InputFloat3@ImGui@@YA_NPEBDQEAM0H@Z";
+    return _internal_InputFloat3(label, v.data, format.data, flags);
             }
 InputFloat4                    :: (label: *u8, v: [4]float, format: string = "%.3f", flags: InputTextFlags = .None) -> bool {
-    _internal_InputFloat4 :: (label: *u8, v: [4]float, format: *u8, flags: InputTextFlags) -> bool #foreign imgui_lib "?InputFloat4@ImGui@@YA_NPEBDQEAM0H@Z";
-    return _internal_InputFloat4(label, v, format.data, flags);
+    _internal_InputFloat4 :: (label: *u8, v: *float, format: *u8, flags: InputTextFlags) -> bool #foreign imgui_lib "?InputFloat4@ImGui@@YA_NPEBDQEAM0H@Z";
+    return _internal_InputFloat4(label, v.data, format.data, flags);
             }
 InputInt                       :: (label: *u8, v: *s32, step: s32 = 1, step_fast: s32 = 100, flags: InputTextFlags = .None) -> bool #foreign imgui_lib "?InputInt@ImGui@@YA_NPEBDPEAHHHH@Z";
 InputInt2                      :: (label: *u8, v: [2]s32, flags: InputTextFlags = .None) -> bool #foreign imgui_lib "?InputInt2@ImGui@@YA_NPEBDQEAHH@Z";
@@ -1168,32 +1168,32 @@ SliderFloat                    :: (label: *u8, v: *float, v_min: float, v_max: f
     return _internal_SliderFloat(label, v, v_min, v_max, format.data, flags);
             }
 SliderFloat2                   :: (label: *u8, v: [2]float, v_min: float, v_max: float, format: string = "%.3f", flags: SliderFlags = .None) -> bool {
-    _internal_SliderFloat2 :: (label: *u8, v: [2]float, v_min: float, v_max: float, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?SliderFloat2@ImGui@@YA_NPEBDQEAMMM0H@Z";
-    return _internal_SliderFloat2(label, v, v_min, v_max, format.data, flags);
+    _internal_SliderFloat2 :: (label: *u8, v: *float, v_min: float, v_max: float, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?SliderFloat2@ImGui@@YA_NPEBDQEAMMM0H@Z";
+    return _internal_SliderFloat2(label, v.data, v_min, v_max, format.data, flags);
             }
 SliderFloat3                   :: (label: *u8, v: [3]float, v_min: float, v_max: float, format: string = "%.3f", flags: SliderFlags = .None) -> bool {
-    _internal_SliderFloat3 :: (label: *u8, v: [3]float, v_min: float, v_max: float, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?SliderFloat3@ImGui@@YA_NPEBDQEAMMM0H@Z";
-    return _internal_SliderFloat3(label, v, v_min, v_max, format.data, flags);
+    _internal_SliderFloat3 :: (label: *u8, v: *float, v_min: float, v_max: float, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?SliderFloat3@ImGui@@YA_NPEBDQEAMMM0H@Z";
+    return _internal_SliderFloat3(label, v.data, v_min, v_max, format.data, flags);
             }
 SliderFloat4                   :: (label: *u8, v: [4]float, v_min: float, v_max: float, format: string = "%.3f", flags: SliderFlags = .None) -> bool {
-    _internal_SliderFloat4 :: (label: *u8, v: [4]float, v_min: float, v_max: float, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?SliderFloat4@ImGui@@YA_NPEBDQEAMMM0H@Z";
-    return _internal_SliderFloat4(label, v, v_min, v_max, format.data, flags);
+    _internal_SliderFloat4 :: (label: *u8, v: *float, v_min: float, v_max: float, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?SliderFloat4@ImGui@@YA_NPEBDQEAMMM0H@Z";
+    return _internal_SliderFloat4(label, v.data, v_min, v_max, format.data, flags);
             }
 SliderInt                      :: (label: *u8, v: *s32, v_min: s32, v_max: s32, format: string = "%d", flags: SliderFlags = .None) -> bool {
     _internal_SliderInt :: (label: *u8, v: *s32, v_min: s32, v_max: s32, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?SliderInt@ImGui@@YA_NPEBDPEAHHH0H@Z";
     return _internal_SliderInt(label, v, v_min, v_max, format.data, flags);
             }
 SliderInt2                     :: (label: *u8, v: [2]s32, v_min: s32, v_max: s32, format: string = "%d", flags: SliderFlags = .None) -> bool {
-    _internal_SliderInt2 :: (label: *u8, v: [2]s32, v_min: s32, v_max: s32, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?SliderInt2@ImGui@@YA_NPEBDQEAHHH0H@Z";
-    return _internal_SliderInt2(label, v, v_min, v_max, format.data, flags);
+    _internal_SliderInt2 :: (label: *u8, v: *s32, v_min: s32, v_max: s32, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?SliderInt2@ImGui@@YA_NPEBDQEAHHH0H@Z";
+    return _internal_SliderInt2(label, v.data, v_min, v_max, format.data, flags);
             }
 SliderInt3                     :: (label: *u8, v: [3]s32, v_min: s32, v_max: s32, format: string = "%d", flags: SliderFlags = .None) -> bool {
-    _internal_SliderInt3 :: (label: *u8, v: [3]s32, v_min: s32, v_max: s32, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?SliderInt3@ImGui@@YA_NPEBDQEAHHH0H@Z";
-    return _internal_SliderInt3(label, v, v_min, v_max, format.data, flags);
+    _internal_SliderInt3 :: (label: *u8, v: *s32, v_min: s32, v_max: s32, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?SliderInt3@ImGui@@YA_NPEBDQEAHHH0H@Z";
+    return _internal_SliderInt3(label, v.data, v_min, v_max, format.data, flags);
             }
 SliderInt4                     :: (label: *u8, v: [4]s32, v_min: s32, v_max: s32, format: string = "%d", flags: SliderFlags = .None) -> bool {
-    _internal_SliderInt4 :: (label: *u8, v: [4]s32, v_min: s32, v_max: s32, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?SliderInt4@ImGui@@YA_NPEBDQEAHHH0H@Z";
-    return _internal_SliderInt4(label, v, v_min, v_max, format.data, flags);
+    _internal_SliderInt4 :: (label: *u8, v: *s32, v_min: s32, v_max: s32, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?SliderInt4@ImGui@@YA_NPEBDQEAHHH0H@Z";
+    return _internal_SliderInt4(label, v.data, v_min, v_max, format.data, flags);
             }
 SliderScalar                   :: (label: *u8, data_type: DataType, p_data: *void, p_min: *void, p_max: *void, format: string = "", flags: SliderFlags = .None) -> bool {
     _internal_SliderScalar :: (label: *u8, data_type: DataType, p_data: *void, p_min: *void, p_max: *void, format: *u8, flags: SliderFlags) -> bool #foreign imgui_lib "?SliderScalar@ImGui@@YA_NPEBDHPEAXPEBX20H@Z";

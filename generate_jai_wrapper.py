@@ -2,6 +2,9 @@
 
 Generates Jai bindings for imgui from the JSON emitted by the cimgui project.
 
+
+TODO: RVO functions are failing. see http://www.cplusplus.com/forum/general/228878/
+
 '''
 
 import ast
@@ -330,7 +333,7 @@ def get_jai_func_ptr(jai_type):
                 arg_type = elems[0]
                 arg_name = f"unnamed{i}"
             else:
-                assert(len(elems) == 2)
+                assert len(elems) == 2
                 arg_type, arg_name = elems
 
         arg_type = to_jai_type(arg_type)
@@ -398,7 +401,7 @@ def get_windows_symbols(dll_filename):
     if os.path.isfile(exports_file):
         os.remove(exports_file)
     os.system(f"dumpbin /nologo /exports {dll_filename} > {exports_file}")
-    assert(os.path.isfile(exports_file))
+    assert os.path.isfile(exports_file)
 
     started = False
     count = 0
@@ -449,13 +452,13 @@ def split_args(args_str):
 
     return args
 
-assert(split_args("int foo,const char* bar") == ["int foo", "const char* bar"])
-assert(split_args("") == [])
-assert(split_args("void * (__cdecl*)(unsigned __int64,void *),void (__cdecl*)(void *,void *),void *") == [
+assert split_args("int foo,const char* bar") == ["int foo", "const char* bar"]
+assert split_args("") == []
+assert split_args("void * (__cdecl*)(unsigned __int64,void *),void (__cdecl*)(void *,void *),void *") == [
     "void * (__cdecl*)(unsigned __int64,void *)",
     "void (__cdecl*)(void *,void *)",
     "void *",
-])
+]
 
 def group_symbols(symbols):
     missed_count = 0
@@ -520,7 +523,10 @@ def to_jai_func_ptr(desc):
 
     return f"({args}){ret_with_arrow} #c_call"
 
-def to_jai_type(cpp_type_string):
+def to_jai_type(cpp_type_string, info=None):
+    if info is None:
+        info = {}
+
     if cpp_type_string == "char*":
         return "*u8"
 
@@ -548,10 +554,18 @@ def to_jai_type(cpp_type_string):
     cpp_type_string = handle_pointers(strip_im_prefixes(replace_types(cpp_type_string)))
 
     # in jai we put the array part first
-    match = re.match(r"^(.*)\[(\d+)\]$", cpp_type_string)
+
+    # TODO: the cpp_type_string coming into this function may have the array already flipped.
+    # that seems wrong.
+    match = re.match(r"^(?P<identifier>.*)\[(?P<array_size>\d+)\]$", cpp_type_string)
+    if not match:
+        match = re.match(r"^\[(?P<array_size>\d+)\](?P<identifier>.*)$", cpp_type_string)
     if match:
-        identifier, array_size = match.groups()
+        identifier, array_size = match.group("identifier"), match.group("array_size")
+        info['array_size'] = array_size
         cpp_type_string = f"[{array_size}]{identifier}"
+    elif '[' in cpp_type_string and 'float' in cpp_type_string:
+        assert False, cpp_type_string
 
     assert isinstance(cpp_type_string, str)
     return cpp_type_string
@@ -791,7 +805,9 @@ def get_jai_args(structs_and_enums, func_entry):
         assert len(argsT) == len(parsed_arg_infos) + 1
         parsed_arg_infos.insert(0, dict(name="self", type=argsT[0]['type'], jai_type=to_jai_type(argsT[0]['type'])))
 
-    assert len(argsT) == len(parsed_arg_infos), pformat((argsT, parsed_arg_infos))
+    assert len(argsT) == len(parsed_arg_infos), pformat([
+            ("comparison", (argsT, parsed_arg_infos)),
+            ("func_entry", func_entry)])
 
     needs_defaults_wrapper = False
     arg_infos = []
@@ -803,9 +819,10 @@ def get_jai_args(structs_and_enums, func_entry):
         # "argsoriginal": "(const char* label,int* current_item,bool(*items_getter)(void* data,int idx,const char** out_text),void* data,int items_count,int height_in_items=-1)",
         # can check "signature" in argsT entry
 
-        jai_arg_type = to_jai_type(parsed_arg_infos[i]["type"])
+        arg_type_info = {}
+        jai_arg_type = to_jai_type(parsed_arg_infos[i]["type"], arg_type_info)
         if func_entry['funcname'] in diagnose_funcnames:
-            print("jai_arg_type", i,parsed_arg_infos[i]["type"], jai_arg_type)
+            print("jai_arg_type", i,parsed_arg_infos[i]["type"], "->", jai_arg_type)
 
         if name == "...":
             name = "args"
@@ -833,6 +850,9 @@ def get_jai_args(structs_and_enums, func_entry):
             needs_defaults_wrapper = True
             wrapper_arg_type = strip_pointer_or_array(parsed_arg['jai_type'])
             call_arg_value = "*" + name
+        elif arg_type_info.get('array_size', 0):
+            needs_default_wrapper = True
+            call_arg_value = name + ".data"
         else:
             assert parsed_arg['name'] == name, parsed_arg["name"] + " vs " + name
             if isinstance(parsed_arg["type"], str):
@@ -950,7 +970,9 @@ int main(int argc, char** argv) {
 
             args_info, needs_defaults_wrapper = get_jai_args(structs_and_enums, entry)
 
-            if entry['funcname'] in diagnose_funcnames:
+            diagnose = entry['funcname'] in diagnose_funcnames
+
+            if diagnose:
                 print("=== needs defaults wrapper: ", needs_defaults_wrapper)
 
             ret_type = entry.get("ret", None)
@@ -973,12 +995,20 @@ int main(int argc, char** argv) {
             def get_dict(k):
                 dct = k._asdict()
                 dct.update(meta_jai_type=to_jai_type(k.meta["type"]))
+
+                dct['internal_jai_type'] = dct['meta_jai_type']
+
+                info = {}
+                to_jai_type(k.meta['type'], info)
+                if info.get('array_size', 0):
+                    dct['internal_jai_type'] = '*' + strip_pointer_or_array(dct['meta_jai_type'])
+
                 return dct
 
             if needs_defaults_wrapper:
 
                 args_string = ", ".join("{name}: {meta_jai_type}{default_str}".format(**get_dict(k)) for k in args_info)
-                args_string_internal = ", ".join("{name}: {meta_jai_type}".format(**get_dict(k)) for k in args_info)
+                args_string_internal = ", ".join("{name}: {internal_jai_type}".format(**get_dict(k)) for k in args_info)
                 wrapper_args_string = ", ".join("{name}: {wrapper_arg_type}{default_str}".format(**get_dict(k)) for k in args_info)
 
                 jai_func_name_internal = "_internal_" + entry['funcname']
@@ -1103,7 +1133,7 @@ def get_function_symbol(symbols_grouped, structs_and_enums, function_entry, args
         functions_skipped.append((f"{stname}::" if stname else "") + funcname)
 
         if _state['nomatch_verbose'] or funcname in diagnose_funcnames:
-            print(f"===============\nno match: " + funcname)
+            print(f"===============\nno match for function: " + funcname)
             print("functions in dll: " + pformat(funcs))
             print("function in json: " + pformat(function_entry))
             print("skip reasons:\n" + pformat(skip_reasons))

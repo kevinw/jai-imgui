@@ -54,7 +54,7 @@ ImGui_Impl_RenderDrawData :: (using ui_state: *UI_State, draw_data: *ImGui.ImDra
     fb_width := (io.DisplaySize.x * io.DisplayFramebufferScale.x);
     fb_height := (io.DisplaySize.y * io.DisplayFramebufferScale.y);
     if fb_width == 0 || fb_height == 0 return;
-    draw_data.ScaleClipRects(draw_data, *io.DisplayFramebufferScale);
+    draw_data.ScaleClipRects(draw_data, io.DisplayFramebufferScale);
 
     // Backup GL state
     last_active_texture: GLenum;        glGetIntegerv(GL_ACTIVE_TEXTURE, xx *last_active_texture);
