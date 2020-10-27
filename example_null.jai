@@ -39,8 +39,6 @@ main :: () {
         ImGui.Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0 / io.Framerate, io.Framerate);
         ImGui.ShowDemoWindow(null);
 
-        pos := ImGui.GetWindowPos();
-
         ImGui.Render();
     }
 
