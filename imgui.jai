@@ -839,7 +839,9 @@ GetColumnIndex                 :: () -> s32 #foreign imgui_lib "?GetColumnIndex@
 GetColumnOffset                :: (column_index: s32 = -1) -> float #foreign imgui_lib "?GetColumnOffset@ImGui@@YAMH@Z";
 GetColumnWidth                 :: (column_index: s32 = -1) -> float #foreign imgui_lib "?GetColumnWidth@ImGui@@YAMH@Z";
 GetColumnsCount                :: () -> s32 #foreign imgui_lib "?GetColumnsCount@ImGui@@YAHXZ";
+GetContentRegionMax            :: () -> ImVec2 #cpp_return_type_is_non_pod #foreign imgui_lib "?GetContentRegionMax@ImGui@@YA?AUImVec2@@XZ";
 GetCurrentContext              :: () -> *Context #foreign imgui_lib "?GetCurrentContext@ImGui@@YAPEAUImGuiContext@@XZ";
+GetCursorPos                   :: () -> ImVec2 #cpp_return_type_is_non_pod #foreign imgui_lib "?GetCursorPos@ImGui@@YA?AUImVec2@@XZ";
 GetCursorPosX                  :: () -> float #foreign imgui_lib "?GetCursorPosX@ImGui@@YAMXZ";
 GetCursorPosY                  :: () -> float #foreign imgui_lib "?GetCursorPosY@ImGui@@YAMXZ";
 GetDragDropPayload             :: () -> *Payload #foreign imgui_lib "?GetDragDropPayload@ImGui@@YAPEBUImGuiPayload@@XZ";
@@ -879,6 +881,8 @@ GetWindowDockID                :: () -> ID #foreign imgui_lib "?GetWindowDockID@
 GetWindowDpiScale              :: () -> float #foreign imgui_lib "?GetWindowDpiScale@ImGui@@YAMXZ";
 GetWindowDrawList              :: () -> *ImDrawList #foreign imgui_lib "?GetWindowDrawList@ImGui@@YAPEAUImDrawList@@XZ";
 GetWindowHeight                :: () -> float #foreign imgui_lib "?GetWindowHeight@ImGui@@YAMXZ";
+GetWindowPos                   :: () -> ImVec2 #cpp_return_type_is_non_pod #foreign imgui_lib "?GetWindowPos@ImGui@@YA?AUImVec2@@XZ";
+GetWindowSize                  :: () -> ImVec2 #cpp_return_type_is_non_pod #foreign imgui_lib "?GetWindowSize@ImGui@@YA?AUImVec2@@XZ";
 GetWindowViewport              :: () -> *Viewport #foreign imgui_lib "?GetWindowViewport@ImGui@@YAPEAUImGuiViewport@@XZ";
 GetWindowWidth                 :: () -> float #foreign imgui_lib "?GetWindowWidth@ImGui@@YAMXZ";
 Image                          :: (user_texture_id: ImTextureID, size: ImVec2, uv0: ImVec2 = ImVec2.{0,0}, uv1: ImVec2 = ImVec2.{1,1}, tint_col: ImVec4 = ImVec4.{1,1,1,1}, border_col: ImVec4 = ImVec4.{0,0,0,0}) {
@@ -1214,10 +1218,18 @@ TextColored                    :: (col: ImVec4, fmt: *u8, args: ..Any) {
     _internal_TextColored(*col, fmt, args);
             }
 TextDisabled                   :: (fmt: *u8, args: ..Any) #foreign imgui_lib "?TextDisabled@ImGui@@YAXPEBDZZ";
-TextUnformatted                :: (text: *u8, text_end: string = "") {
-    _internal_TextUnformatted :: (text: *u8, text_end: *u8) #foreign imgui_lib "?TextUnformatted@ImGui@@YAXPEBD0@Z";
-    _internal_TextUnformatted(text, text_end.data);
-            }
+TextUnformatted                :: (text: *u8, text_end: *u8) #foreign imgui_lib "?TextUnformatted@ImGui@@YAXPEBD0@Z";
+
+// Jai-friendly wrappers
+Text :: (fmt: string, args: .. Any) {
+    text := tprint(fmt, ..args);
+    TextUnformatted(text.data, text.data+text.count);
+}
+TextDisabled :: (fmt: string, args: .. Any) {
+    text := tprint(tprint("%\0", fmt), ..args);
+    TextDisabled(text.data);
+}
+
 TextWrapped                    :: (fmt: *u8, args: ..Any) #foreign imgui_lib "?TextWrapped@ImGui@@YAXPEBDZZ";
 TreeNode                       :: (label: *u8) -> bool #foreign imgui_lib "?TreeNode@ImGui@@YA_NPEBD@Z";
 TreeNode                       :: (str_id: *u8, fmt: *u8, args: ..Any) -> bool #foreign imgui_lib "?TreeNode@ImGui@@YA_NPEBD0ZZ";
@@ -1574,7 +1586,34 @@ ImFontConfig :: struct {
     EllipsisChar: ImWchar;
     Name: [40]s8;
     DstFont: *ImFont;
+}     
+
+// Mirrors the C++ constructor for ImFontConfig
+make_im_font_config :: () -> ImFontConfig {
+    cfg : ImFontConfig = ---;
+    using cfg;
+    FontData = null;
+    FontDataSize = 0;
+    FontDataOwnedByAtlas = true;
+    FontNo = 0;
+    SizePixels = 0.0;
+    OversampleH = 3;
+    OversampleV = 1;
+    PixelSnapH = false;
+    GlyphExtraSpacing = Vector2.{0.0, 0.0};
+    GlyphOffset = Vector2.{0.0, 0.0};
+    GlyphRanges = null;
+    GlyphMinAdvanceX = 0;
+    GlyphMaxAdvanceX = FLOAT32_MAX;
+    MergeMode = false;
+    RasterizerFlags = 0x00;
+    RasterizerMultiply = 1.0;
+    EllipsisChar = 0; // @TODO default in Imgui C++ is -1, do we want to cast/trunc or something?
+    memset(Name.data, 0, size_of(type_of(Name)));
+    DstFont = null;
+    return cfg;
 }
+
 
 ImFontGlyph :: struct {
     Codepoint: u32;
@@ -1920,18 +1959,24 @@ WindowClass :: struct {
     DockingAllowUnclassed: bool;
 }
 
-ImVec2 :: struct {
-    x: float;
-    y: float;
+USE_MATH_MODULE :: true; // @TODO should be a module parameter?
+#if USE_MATH_MODULE {
+    #import "Math";
+    ImVec2 :: Vector2;
+    ImVec4 :: Vector4;
+} else {
+    ImVec2 :: struct {
+        x: float;
+        y: float;
+    }
+    
+    ImVec4 :: struct {
+        x: float;
+        y: float;
+        z: float;
+        w: float;
+    }
 }
-
-ImVec4 :: struct {
-    x: float;
-    y: float;
-    z: float;
-    w: float;
-}
-
 
 Context :: struct { data: *void; }
 
@@ -1983,7 +2028,16 @@ TreeNode :: (fmt: string, args: ..Any) -> bool {
     return TreeNode(txt.data);
 }
 
-
+IM_COL32_R_SHIFT  ::  0;
+IM_COL32_G_SHIFT  ::  8;
+IM_COL32_B_SHIFT  ::  16;
+IM_COL32_A_SHIFT  ::  24;
+IM_COL32_A_MASK   ::  0xFF000000;
+// This is a C preprocessor macro, should it be a Jai macro?
+make_col32 :: (R : u32, G: u32, B: u32, A: u32) -> u32 {
+    return cast(u32)((A<<IM_COL32_A_SHIFT) | (B<<IM_COL32_B_SHIFT) | 
+        (G<<IM_COL32_G_SHIFT) | (R<<IM_COL32_R_SHIFT));
+}
 
 #scope_file
 
