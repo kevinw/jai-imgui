@@ -1978,7 +1978,7 @@ make_ImVec2 :: inline (a: float, b: float) -> ImVec2 {
 }
 
 TreeNode :: (fmt: string, args: ..Any) -> bool {
-    fmt_z := tprint("% ", fmt);
+    fmt_z := tprint("%\0", fmt);
     txt := tprint(fmt_z, ..args);    // Note that tprintz appends a null byte at the end!
     return TreeNode(txt.data);
 }
