@@ -1591,6 +1591,10 @@ ImFontConfig :: struct {
 // Mirrors the C++ constructor for ImFontConfig
 make_im_font_config :: () -> ImFontConfig {
     cfg : ImFontConfig = ---;
+    // @TODO figure out why calling the constructor like this crashses
+    // and use it instead of duplicating all the default values below.
+    // ImFontConfig_ctor : (this: *ImFontConfig) #foreign imgui_lib "??0ImFontConfig@@QEAA@XZ";
+    // ImFontConfig_ctor(*cfg);
     using cfg;
     FontData = null;
     FontDataSize = 0;
