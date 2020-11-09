@@ -1069,7 +1069,7 @@ RadioButton                    :: (label: *u8, v: *s32, v_button: s32) -> bool #
 Render                         :: () #foreign imgui_lib "?Render@ImGui@@YAXXZ";
 RenderPlatformWindowsDefault   :: (platform_render_arg: *void = null, renderer_render_arg: *void = null) #foreign imgui_lib "?RenderPlatformWindowsDefault@ImGui@@YAXPEAX0@Z";
 ResetMouseDragDelta            :: (button: MouseButton = .Left) #foreign imgui_lib "?ResetMouseDragDelta@ImGui@@YAXH@Z";
-SameLine                       :: (offset_from_start_x: float = 0.0, spacing: float = 1.0) #foreign imgui_lib "?SameLine@ImGui@@YAXMM@Z";
+SameLine                       :: (offset_from_start_x: float = 0.0, spacing: float = -1.0) #foreign imgui_lib "?SameLine@ImGui@@YAXMM@Z";
 SaveIniSettingsToDisk          :: (ini_filename: *u8) #foreign imgui_lib "?SaveIniSettingsToDisk@ImGui@@YAXPEBD@Z";
 SaveIniSettingsToMemory        :: (out_ini_size: *u64 = null) -> *u8 #foreign imgui_lib "?SaveIniSettingsToMemory@ImGui@@YAPEBDPEA_K@Z";
 Selectable                     :: (label: *u8, selected: bool = false, flags: SelectableFlags = .None, size: ImVec2 = ImVec2.{0,0}) -> bool {
@@ -1774,6 +1774,13 @@ ListClipper :: struct {
 
 OnceUponAFrame :: struct {
     RefFrame: s32;
+}
+IsOnceUponAFrame :: (using o: *OnceUponAFrame) -> bool {
+    current_frame := GetFrameCount(); 
+    if (RefFrame == current_frame) 
+        return false; 
+    RefFrame = current_frame; 
+    return true; 
 }
 
 Payload :: struct {
