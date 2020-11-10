@@ -788,7 +788,7 @@ def parse_arg(c_arg_decl, arg_index):
             default=default_arg,
             is_constref = bool(re.match(r"const \w+&", arg_type)))
 
-def get_jai_args(structs_and_enums, func_entry):
+def get_jai_args(structs_and_enums, func_entry, target=False):
     parsed_arg_infos = []
 
     for i, orig_arg in enumerate(split_args(func_entry["argsoriginal"][1:-1])):
@@ -797,6 +797,9 @@ def get_jai_args(structs_and_enums, func_entry):
             print("arg", i, orig_arg, parsed_arg_infos[-1])
 
     argsT = func_entry["argsT"]
+
+    if target:
+        print(f"{argsT}")
 
     if len(argsT) >= 1 and argsT[0]["name"] == "pOut":
         argsT.pop(0) # remove pOut arg--its only used by generated cimgui
@@ -812,6 +815,7 @@ def get_jai_args(structs_and_enums, func_entry):
 
     needs_defaults_wrapper = False
     arg_infos = []
+    return_arg_info = None
     for i, arg in enumerate(argsT):
         parsed_arg = parsed_arg_infos[i]
         name, arg_type = arg["name"], arg["type"]
@@ -864,9 +868,13 @@ def get_jai_args(structs_and_enums, func_entry):
         if optional_default is not None:
             default_str = f" = {optional_default}"
 
-        arg_infos.append(ArgInfo(name, jai_arg_type, default_str, wrapper_arg_type, call_arg_value, parsed_arg_infos[i]))
+        arg_info = ArgInfo(name, jai_arg_type, default_str, wrapper_arg_type, call_arg_value, parsed_arg_infos[i])
+        if name == "pOut":
+            return_arg_info = arg_info
+        else:
+            arg_infos.append(arg_info)
 
-    return arg_infos, needs_defaults_wrapper
+    return arg_infos, needs_defaults_wrapper, return_arg_info
 
 def count_pointers(jai_type):
     return jai_type.count("*") + len(re.findall(r"\[(?:\d+)?\]", jai_type))
@@ -969,7 +977,14 @@ int main(int argc, char** argv) {
             if entry.get("location", None) == "internal":
                 continue
 
-            args_info, needs_defaults_wrapper = get_jai_args(structs_and_enums, entry)
+            target = entry['cimguiname'] == "igGetWindowSize"
+            if target:
+                print(f"my little: {entry['cimguiname']}")
+
+            args_info, needs_defaults_wrapper, return_arg_info = get_jai_args(structs_and_enums, entry, target)
+
+            if return_arg_info is not None and target:
+                print(f"return arg: {return_arg_info}")
 
             diagnose = entry['funcname'] in diagnose_funcnames
 
@@ -980,7 +995,7 @@ int main(int argc, char** argv) {
             if ret_type == "void": ret_type = None
             ret_val_with_arrow = f" -> {to_jai_type(ret_type)}" if ret_type is not None else ""
 
-            dll_symbol = get_function_symbol(symbols_grouped, structs_and_enums, entry, args_info)
+            dll_symbol = get_function_symbol(symbols_grouped, structs_and_enums, entry, args_info, target)
             if dll_symbol is None:
                 continue
 
@@ -1111,7 +1126,7 @@ int main(int argc, char** argv) {
 
 _state = dict(nomatch_verbose = False)
 
-def get_function_symbol(symbols_grouped, structs_and_enums, function_entry, args_info):
+def get_function_symbol(symbols_grouped, structs_and_enums, function_entry, args_info, target=False):
     # Given a list of function symbols from the DLL, attempt to match by
     # function name, argument and return types, and namespace. Returns
     # the mangled symbol name.
@@ -1122,7 +1137,7 @@ def get_function_symbol(symbols_grouped, structs_and_enums, function_entry, args
     funcs = symbols_grouped[funcname]
     skip_reasons = []
 
-    def nomatch():
+    def nomatch(target=False):
         if len(funcs) == 0:
             # an inline function has no actual DLL code. we'll have to figure out how to either make them manually...or...
             inline_functions_skipped.append(funcname)
@@ -1133,7 +1148,7 @@ def get_function_symbol(symbols_grouped, structs_and_enums, function_entry, args
         stname = function_entry.get("stname", None)
         functions_skipped.append((f"{stname}::" if stname else "") + funcname)
 
-        if _state['nomatch_verbose'] or funcname in diagnose_funcnames:
+        if target or _state['nomatch_verbose'] or funcname in diagnose_funcnames:
             print(f"===============\nno match for function: " + funcname)
             print("functions in dll: " + pformat(funcs))
             print("function in json: " + pformat(function_entry))
@@ -1156,6 +1171,10 @@ def get_function_symbol(symbols_grouped, structs_and_enums, function_entry, args
         jai_entry_ret = to_jai_type(function_entry["ret"])
         equiv, reason = jai_types_equivalent(enums, jai_dll_ret, jai_entry_ret)
         if not equiv:
+            if target:
+                print(f"args_info = {args_info}")
+                # print(f"first arg = {args_info[0]}")
+                print("RETURN NOT MATCHED")
             skip_reasons.append(("return value (json, dll)", (jai_dll_ret, jai_entry_ret)))
             continue
 
@@ -1177,7 +1196,7 @@ def get_function_symbol(symbols_grouped, structs_and_enums, function_entry, args
 
         return dll_func['mangled']
 
-    nomatch()
+    nomatch(target)
     return None
 
 assert to_jai_type("const char*") == "*u8", "uhoh: " + to_jai_type("const_char*")

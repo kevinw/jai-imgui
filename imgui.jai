@@ -720,6 +720,7 @@ Button                         :: (label: *u8, size: ImVec2 = ImVec2.{0,0}) -> b
             }
 CalcItemWidth                  :: () -> float #foreign imgui_lib "?CalcItemWidth@ImGui@@YAMXZ";
 CalcListClipping               :: (items_count: s32, items_height: float, out_items_display_start: *s32, out_items_display_end: *s32) #foreign imgui_lib "?CalcListClipping@ImGui@@YAXHMPEAH0@Z";
+CalcTextSize                   :: (text: *u8, text_end: *u8, hide_text_after_double_hash: bool=false, wrap_width: float=-1.0) -> ImVec2 #cpp_return_type_is_non_pod #foreign imgui_lib "?CalcTextSize@ImGui@@YA?AUImVec2@@PEBD0_NM@Z";
 CaptureKeyboardFromApp         :: (want_capture_keyboard_value: bool = true) #foreign imgui_lib "?CaptureKeyboardFromApp@ImGui@@YAX_N@Z";
 CaptureMouseFromApp            :: (want_capture_mouse_value: bool = true) #foreign imgui_lib "?CaptureMouseFromApp@ImGui@@YAX_N@Z";
 Checkbox                       :: (label: *u8, v: *bool) -> bool #foreign imgui_lib "?Checkbox@ImGui@@YA_NPEBDPEA_N@Z";
@@ -1219,18 +1220,25 @@ TextColored                    :: (col: ImVec4, fmt: *u8, args: ..Any) {
             }
 TextDisabled                   :: (fmt: *u8, args: ..Any) #foreign imgui_lib "?TextDisabled@ImGui@@YAXPEBDZZ";
 TextUnformatted                :: (text: *u8, text_end: *u8) #foreign imgui_lib "?TextUnformatted@ImGui@@YAXPEBD0@Z";
+TextWrapped                    :: (fmt: *u8, args: ..Any) #foreign imgui_lib "?TextWrapped@ImGui@@YAXPEBDZZ";
 
 // Jai-friendly wrappers
 Text :: (fmt: string, args: .. Any) {
     text := tprint(fmt, ..args);
     TextUnformatted(text.data, text.data+text.count);
 }
+TextWrapped :: (fmt: string, args: .. Any) {
+    // @TODO avoid unnecessary string wrangling somehow?
+    text := tprint(tprint("%\0", fmt), ..args);
+    TextWrapped(text.data);
+}
 TextDisabled :: (fmt: string, args: .. Any) {
+    // @TODO avoid unnecessary string wrangling somehow?
     text := tprint(tprint("%\0", fmt), ..args);
     TextDisabled(text.data);
 }
 
-TextWrapped                    :: (fmt: *u8, args: ..Any) #foreign imgui_lib "?TextWrapped@ImGui@@YAXPEBDZZ";
+
 TreeNode                       :: (label: *u8) -> bool #foreign imgui_lib "?TreeNode@ImGui@@YA_NPEBD@Z";
 TreeNode                       :: (str_id: *u8, fmt: *u8, args: ..Any) -> bool #foreign imgui_lib "?TreeNode@ImGui@@YA_NPEBD0ZZ";
 TreeNode                       :: (ptr_id: *void, fmt: *u8, args: ..Any) -> bool #foreign imgui_lib "?TreeNode@ImGui@@YA_NPEBXPEBDZZ";
