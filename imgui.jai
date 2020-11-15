@@ -1002,7 +1002,7 @@ MemAlloc                       :: (size: u64) -> *void #foreign imgui_lib "?MemA
 MemFree                        :: (ptr: *void) #foreign imgui_lib "?MemFree@ImGui@@YAXPEAX@Z";
 MenuItem                       :: (label: *u8, shortcut: string = "", selected: bool = false, enabled: bool = true) -> bool {
     _internal_MenuItem :: (label: *u8, shortcut: *u8, selected: bool, enabled: bool) -> bool #foreign imgui_lib "?MenuItem@ImGui@@YA_NPEBD0_N1@Z";
-    return _internal_MenuItem(label, shortcut.data, selected, enabled);
+    return _internal_MenuItem(label, temp_c_string(shortcut), selected, enabled);
             }
 MenuItem                       :: (label: *u8, shortcut: *u8, p_selected: *bool, enabled: bool = true) -> bool #foreign imgui_lib "?MenuItem@ImGui@@YA_NPEBD0PEA_N_N@Z";
 NewFrame                       :: () #foreign imgui_lib "?NewFrame@ImGui@@YAXXZ";
@@ -1225,6 +1225,9 @@ TextWrapped                    :: (fmt: *u8, args: ..Any) #foreign imgui_lib "?T
 // Jai-friendly wrappers
 Text :: (fmt: string, args: .. Any) {
     text := tprint(fmt, ..args);
+    TextUnformatted(text);
+}
+TextUnformatted :: (text: string) {
     TextUnformatted(text.data, text.data+text.count);
 }
 TextWrapped :: (fmt: string, args: .. Any) {
@@ -1934,10 +1937,10 @@ TextFilter :: struct {
     _internal_Draw :: (self: *TextFilter, label: *u8, width: float) -> bool #foreign imgui_lib "?Draw@ImGuiTextFilter@@QEAA_NPEBDM@Z";
     return _internal_Draw(self, label.data, width);
             }
-    PassFilter     :: (self: *TextFilter, text: *u8, text_end: string = "") -> bool {
-    _internal_PassFilter :: (self: *TextFilter, text: *u8, text_end: *u8) -> bool #foreign imgui_lib "?PassFilter@ImGuiTextFilter@@QEBA_NPEBD0@Z";
-    return _internal_PassFilter(self, text, text_end.data);
-            }
+    PassFilter     :: (self: *TextFilter, text: *u8, text_end: *u8) -> bool #foreign imgui_lib "?PassFilter@ImGuiTextFilter@@QEBA_NPEBD0@Z";
+    PassFilter     :: (self: *TextFilter, text: string) -> bool {
+        return PassFilter(self, text.data, text.data+text.count);
+    }
 }
 
 TextRange :: struct {
