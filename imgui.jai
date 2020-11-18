@@ -698,7 +698,7 @@ BeginMenuBar                   :: () -> bool #foreign imgui_lib "?BeginMenuBar@I
 BeginPopup                     :: (str_id: *u8, flags: WindowFlags = .None) -> bool #foreign imgui_lib "?BeginPopup@ImGui@@YA_NPEBDH@Z";
 BeginPopupContextItem          :: (str_id: string = "", popup_flags: PopupFlags = .MouseButtonRight) -> bool {
     _internal_BeginPopupContextItem :: (str_id: *u8, popup_flags: PopupFlags) -> bool #foreign imgui_lib "?BeginPopupContextItem@ImGui@@YA_NPEBDH@Z";
-    return _internal_BeginPopupContextItem(str_id.data, popup_flags);
+    return _internal_BeginPopupContextItem(temp_c_string(str_id), popup_flags);
             }
 BeginPopupContextVoid          :: (str_id: string = "", popup_flags: PopupFlags = .MouseButtonRight) -> bool {
     _internal_BeginPopupContextVoid :: (str_id: *u8, popup_flags: PopupFlags) -> bool #foreign imgui_lib "?BeginPopupContextVoid@ImGui@@YA_NPEBDH@Z";
