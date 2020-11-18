@@ -6,7 +6,9 @@
 #import "Basic";
 
 #scope_file
-#import "Windows";
+#if OS == .WINDOWS {
+	#import "Windows";
+}
 #scope_module
 
 #load "imgui_impl.jai";
