@@ -1213,7 +1213,7 @@ Spacing                        :: () #foreign imgui_lib "?Spacing@ImGui@@YAXXZ";
 StyleColorsClassic             :: (dst: *Style = null) #foreign imgui_lib "?StyleColorsClassic@ImGui@@YAXPEAUImGuiStyle@@@Z";
 StyleColorsDark                :: (dst: *Style = null) #foreign imgui_lib "?StyleColorsDark@ImGui@@YAXPEAUImGuiStyle@@@Z";
 StyleColorsLight               :: (dst: *Style = null) #foreign imgui_lib "?StyleColorsLight@ImGui@@YAXPEAUImGuiStyle@@@Z";
-Text                           :: (fmt: *u8, args: ..Any) #foreign imgui_lib "?Text@ImGui@@YAXPEBDZZ";
+_Text                           :: (fmt: *u8, args: ..Any) #foreign imgui_lib "?Text@ImGui@@YAXPEBDZZ";
 TextColored                    :: (col: ImVec4, fmt: *u8, args: ..Any) {
     _internal_TextColored :: (col: *ImVec4, fmt: *u8, args: ..Any) #foreign imgui_lib "?TextColored@ImGui@@YAXAEBUImVec4@@PEBDZZ";
     _internal_TextColored(*col, fmt, args);
@@ -1393,9 +1393,9 @@ ImDrawList :: struct {
     _internal_AddText :: (self: *ImDrawList, pos: *ImVec2, col: u32, text_begin: *u8, text_end: *u8) #foreign imgui_lib "?AddText@ImDrawList@@QEAAXAEBUImVec2@@IPEBD1@Z";
     _internal_AddText(self, *pos, col, text_begin, text_end.data);
             }
-    AddText                     :: (self: *ImDrawList, font: *ImFont, font_size: float, pos: ImVec2, col: u32, text_begin: *u8, text_end: string = "", wrap_width: float = 0.0, cpu_fine_clip_rect: *ImVec4 = null) {
+    AddText                     :: (self: *ImDrawList, font: *ImFont, font_size: float, pos: ImVec2, col: u32, text_begin: *u8, text_end: *u8, wrap_width: float = 0.0, cpu_fine_clip_rect: *ImVec4 = null) {
     _internal_AddText :: (self: *ImDrawList, font: *ImFont, font_size: float, pos: *ImVec2, col: u32, text_begin: *u8, text_end: *u8, wrap_width: float, cpu_fine_clip_rect: *ImVec4) #foreign imgui_lib "?AddText@ImDrawList@@QEAAXPEBUImFont@@MAEBUImVec2@@IPEBD2MPEBUImVec4@@@Z";
-    _internal_AddText(self, font, font_size, *pos, col, text_begin, text_end.data, wrap_width, cpu_fine_clip_rect);
+    _internal_AddText(self, font, font_size, *pos, col, text_begin, text_end, wrap_width, cpu_fine_clip_rect);
             }
     AddTriangle                 :: (self: *ImDrawList, p1: ImVec2, p2: ImVec2, p3: ImVec2, col: u32, thickness: float = 1.0) {
     _internal_AddTriangle :: (self: *ImDrawList, p1: *ImVec2, p2: *ImVec2, p3: *ImVec2, col: u32, thickness: float) #foreign imgui_lib "?AddTriangle@ImDrawList@@QEAAXAEBUImVec2@@00IM@Z";
@@ -2059,6 +2059,9 @@ IM_COL32_A_MASK   ::  0xFF000000;
 make_col32 :: (R : u32, G: u32, B: u32, A: u32) -> u32 {
     return cast(u32)((A<<IM_COL32_A_SHIFT) | (B<<IM_COL32_B_SHIFT) | 
         (G<<IM_COL32_G_SHIFT) | (R<<IM_COL32_R_SHIFT));
+}
+make_col32 :: (c: ImVec4) -> u32 {
+    return make_col32(xx(c.x * 255), xx(c.y * 255), xx(c.z * 255), xx(c.w * 255));
 }
 
 #scope_file
