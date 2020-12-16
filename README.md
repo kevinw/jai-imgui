@@ -2,6 +2,8 @@
 
 An alpha-state alternate [Dear ImGui](https://github.com/ocornut/imgui) wrapper for Jai.
 
+![a screenshot showing the demo window](docs/screenshot1.png)
+
 Currently based on ImGui 1.80 WIP.
 
 Windows only at the moment. If you want to add mac or linux support, you need to implement a function like `get_windows_symbols` which demangles C++ function names from the DLL for your platform. The Windows code uses `dumpbin.exe` for this purpose.
