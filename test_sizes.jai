@@ -1,16 +1,18 @@
 // TODO: generate this file
+//
+// reads a file created by a CPP-compiled exe listing out C++ struct sizes
+// and warns you if the jai sizes don't match.
 Compiler :: #import "Compiler";
 #import "Basic";
 #import "Text_File_Handler";
 String :: #import "String";
+#import "imgui"(LINK_STATIC=true);
 
 main :: () {
     txt_file: Text_File_Handler;
     start_file(*txt_file, "imgui_sizes", "imgui_sizes.txt", "imgui_sizes");
     if txt_file.failed return;
     defer deinit(*txt_file);
-
-    #import "imgui";
 
     // to force these things into the type table
     dummy1:  IO;

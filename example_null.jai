@@ -1,7 +1,9 @@
-ImGui :: #import "imgui";
-#import "Basic";
+//
+// This is a non-graphical example program using the ImGui library from Jai.
+//
 
-ImVec2 :: ImGui.ImVec2;
+ImGui :: #import "imgui"(LINK_STATIC=true);
+#import "Basic";
 
 imgui_alloc_context: Context;
 
@@ -14,14 +16,15 @@ c_free :: (ptr: *void, userdata: *void) #c_call {
 }
 
 main :: () {
+    // Have ImGui use our context's allocator.
     imgui_alloc_context = context;
     ImGui.SetAllocatorFunctions(c_alloc, c_free, *imgui_alloc_context);
 
+    // Create the ImGui "context," which stores all the library's internal state.
     ctx := ImGui.CreateContext();
     defer ImGui.DestroyContext(ctx);
 
     io := ImGui.GetIO();
-
     tex_w, tex_h: s32;
     tex_pixels: *u8;
     io.Fonts.GetTexDataAsRGBA32(io.Fonts, *tex_pixels, *tex_w, *tex_h);
@@ -30,7 +33,7 @@ main :: () {
 
     for n: 0..20-1 {
         print("NewFrame() %\n", n);
-        io.DisplaySize = ImVec2.{1920, 1080};
+        io.DisplaySize = ImGui.ImVec2.{1920, 1080};
         io.DeltaTime = 1.0 / 60.0;
         ImGui.NewFrame();
 

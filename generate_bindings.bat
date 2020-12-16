@@ -12,7 +12,7 @@ echo.
 
 type stats.txt
 
-echo building imgui_sizes.exe and example_null.exe ...
+echo building imgui_sizes.exe, example_null.exe, example_opengl.exe ...
 jai build.jai || exit /b
 echo.
 

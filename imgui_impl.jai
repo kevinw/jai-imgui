@@ -9,7 +9,7 @@ Clipboard :: #import "Clipboard";
 Input :: #import "Input";
 
 
-ImGui :: #import "imgui";
+ImGui :: #import "imgui"(LINK_STATIC=true);
 ImDrawIdx :: ImGui.ImDrawIdx;
 make_ImVec2 :: ImGui.make_ImVec2;
 

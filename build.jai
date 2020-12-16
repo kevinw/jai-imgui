@@ -40,7 +40,7 @@ build :: () {
         if it == "opengl"
             build_only_opengl = true;
 
-    build_file("imgui_opengl_test.jai", output_executable_name="imgui_opengl_test");
+    build_file("example_opengl.jai", output_executable_name="example_opengl");
 
     if !build_only_opengl  {
         build_file("example_null.jai", output_executable_name="example_null");

@@ -24,11 +24,9 @@ Then run
 
 `example_null.exe` to see a command-line (non-graphical) test of the bindings, or
 
-`imgui_opengl_test.exe`
+`example_opengl.exe` to see the ImGui demo window. In this second example, you can go to `Examples->Dockspace` to test out docking.
 
-to see the ImGui demo window. You can do `Examples->Dockspace` to test out docking.
-
-One gotcha here: there's an ImGui module included in Jai. The demos expect THIS imgui library to be `#import`ed. So your build script in your own project must modify the modules path. See `build.jai`.
+One gotcha here: there's an ImGui module included in Jai. The demos expect THIS ImGui library to be `#import`ed. So your build script in your own project must modify the modules path. See `build.jai`.
 
 ## Regenerating bindings from scratch
 
