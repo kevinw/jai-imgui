@@ -1,10 +1,7 @@
 '''
-
 Generates Jai bindings for imgui from the JSON emitted by the cimgui project.
 
-
 TODO: RVO functions are failing. see http://www.cplusplus.com/forum/general/228878/
-
 '''
 
 import ast
@@ -20,8 +17,10 @@ import traceback
 from collections import defaultdict, namedtuple
 from pprint import pformat, pprint
 
+is_windows = hasattr(sys, 'getwindowsversion')
+
 OUTPUT_BINDINGS_JAI_FILE = "imgui.jai"
-PATH_TO_IMGUI_DLL        = "win\\imgui.dll"
+PATH_TO_IMGUI_DLL        = "win\\dll\\imgui.lib"
 PATH_TO_CIMGUI           = "cimgui"
 IMGUI_USE_WCHAR32        = False
 SKIP_INTERNAL            = True
@@ -30,9 +29,30 @@ STRIP_IMGUI_PREFIX       = True # If True, this generator will remove 'ImGui' fr
                                 # note that Im like in `ImVector` remains.
 ENUM_TYPE = "s32"               # all imgui enums are c ints
 
-allow_internal = frozenset(["ImDrawListSharedData"])
-skip_structs_for_size = frozenset(["ImGuiTextRange", "ImGuiStoragePair"])
-diagnose_funcnames = frozenset(sys.argv[1:]) # pass additional args on the commandline to print extra info for structs or functions which are missing
+allow_internal        = frozenset(["ImDrawListSharedData"])
+skip_structs_for_size = frozenset([
+    "ImGuiTextRange",
+    "ImGuiStoragePair",
+    "STB_TexteditState",
+    "StbTexteditRow",
+    "StbUndoRecord",
+    "StbUndoState",
+    "ImGuiDataTypeTempStorage",
+    "ImGuiLastItemDataBackup",
+    "ImGuiTableColumnSettings",
+])
+struct_decorations = dict(
+    Context = "#type_info_none", # for some big structs, we'll just omit type info
+)
+# skip functions by their ig names
+skip_functions        = frozenset([
+    # skipping these for now because they have templatized arguments
+    "igDebugNodeWindowsList",
+    "igDockBuilderCopyDockSpace",
+]) 
+skip_structs = frozenset([
+])
+diagnose_funcnames    = frozenset(sys.argv[1:]) # pass additional args on the commandline to print extra info for structs or functions which are missing
 
 exports_file = "imgui_exports.txt"
 
@@ -48,7 +68,8 @@ assert fn_ptr_matcher.match("bool(*items_getter)(void* data,int idx,const char**
 
 # a regex for extracting DLL symbol names from the output of the Microsoft
 # Visual Studio command line tool dumpbin.exe
-export_line_regex = re.compile(r"(\d+)\s+([\da-fA-F]+)\s+([\da-fA-F]+)\s+([^ ]+) = ([^ ]+) \((.*)\)$")
+export_line_regex = re.compile(r"([^ ]+) \((.*)\)$")
+# export_line_regex = re.compile(r".*External\s+\| ([^ ]+) \((.*)\)$")
 
 # for extracting the array size from a field type like "TempBuffer[1024*3+1]"
 arr_part_re = re.compile(r"(\w+)(?:\[([^\]]+)\])?")
@@ -75,10 +96,17 @@ jai_typedefs = dict(
     ImFileHandle = "*void",
     ImGuiID      = "u32",
     ID           = "u32", # TODO: don't repeat ID like this
+    TableDrawChannelIdx = "u8",
+    TableColumnIdx      = "s8",
 
-    ImDrawCallback    = "#type (parent_list: *ImDrawList, cmd: *ImDrawCmd) #c_call",
-    InputTextCallback = "#type (data: *InputTextCallbackData) -> s32 #c_call",
-    SizeCallback      = "#type (data: *SizeCallbackData) #c_call",
+    # temporary?
+    DockNodeSettings = "struct {}",
+    DockRequest      = "struct {}",
+
+    ContextHookCallback = "#type (ctx: *Context, hook: *ContextHook) #c_call",
+    ImDrawCallback      = "#type (parent_list: *ImDrawList, cmd: *ImDrawCmd) #c_call",
+    InputTextCallback   = "#type (data: *InputTextCallbackData) -> s32 #c_call",
+    SizeCallback        = "#type (data: *SizeCallbackData) #c_call",
 
     ImWchar16 = "u16",
     ImWchar32 = "u32",
@@ -98,7 +126,11 @@ inline_functions = dict(
 )
 
 extra_code = """
-Context :: struct { data: *void; }
+
+ImSpan :: struct(T: Type) {
+    Data:    *T;
+    DataEnd: *T;
+}
 
 ImVector :: struct(T: Type) {
     Size:     s32;
@@ -147,9 +179,13 @@ TreeNode :: (fmt: string, args: ..Any) -> bool {
 FLT_MAX :: 0h7F7FFFFF;
 
 #if OS == .WINDOWS
-    imgui_lib :: #foreign_library "win/imgui";
+    #if LINK_STATIC {
+        imgui_lib :: #foreign_library,no_dll "win/static/imgui";
+    } else {
+        imgui_lib :: #foreign_library "win/dll/imgui";
+    }
 else
-    #assert(false);
+    #assert false, "TODO: implement this platform!";
 
 """.replace("ImGui", "" if STRIP_IMGUI_PREFIX else "ImGui")\
    .replace("<IMGUI_USE_WCHAR32>", "true" if IMGUI_USE_WCHAR32 else "false")\
@@ -399,9 +435,10 @@ def print_section(name):
 
 def get_windows_symbols(dll_filename):
     # use dumpbin to export all the symbols from imgui.dll
-    if os.path.isfile(exports_file):
-        os.remove(exports_file)
-    os.system(f"dumpbin /nologo /exports {dll_filename} > {exports_file}")
+    if os.path.isfile(exports_file): os.remove(exports_file)
+    cmdline = f"dumpbin /exports {dll_filename} > {exports_file}"
+    print(cmdline)
+    os.system(cmdline)
     assert os.path.isfile(exports_file)
 
     started = False
@@ -413,19 +450,17 @@ def get_windows_symbols(dll_filename):
         if not started and line.startswith("ordinal"):
             # find the first line describing exports
             started = True
-
-        if not started:
-            continue
-
+        if not started: continue
         match = export_line_regex.match(line)
+        # print(match, line)
         if match is None: continue
-
         symbols.append(SymbolEntry(*match.groups()))
 
-    print(f"matched {len(symbols)} total symbols from {dll_filename}.")
+    print(f"matched {len(symbols)} total symbols from {dll_filename} (exports file was {exports_file}).")
     return symbols
 
-SymbolEntry = namedtuple("SymbolEntry", 'ordinal hint rva name1 name2 demangled')
+# SymbolEntry = namedtuple("SymbolEntry", 'ordinal hint rva name1 name2 demangled')
+SymbolEntry = namedtuple("SymbolEntry", 'name1 demangled')
 
 def split_args(args_str):
     # a complicated example from 
@@ -703,7 +738,7 @@ def make_jai_default_arg(structs_and_enums, optional_default, arg_type):
     if not optional_default:
         return None, info
 
-    if optional_default == "((void*)0)":
+    if optional_default == "((void*)0)" or optional_default == "NULL":
         return "null", info
 
     # TODO: check argtype and probably don't use a regex here.
@@ -721,6 +756,9 @@ def make_jai_default_arg(structs_and_enums, optional_default, arg_type):
 
     if optional_default == "0.0":
         return "0", info
+
+    if optional_default == "~0":
+        optional_default = f"cast({to_jai_type(arg_type)})~0"
 
     # TODO: make this kind of cast more general
     optional_default = optional_default.replace("(ImU32)", "cast(u32)")
@@ -820,8 +858,6 @@ def get_jai_args(structs_and_enums, func_entry, target=False):
         parsed_arg = parsed_arg_infos[i]
         name, arg_type = arg["name"], arg["type"]
 
-        # "argsoriginal": "(ImGuiID id,const ImVec2& size=ImVec2(0,0),ImGuiDockNodeFlags flags=0,const ImGuiWindowClass* window_class=((void*)0))",
-        # "argsoriginal": "(const char* label,int* current_item,bool(*items_getter)(void* data,int idx,const char** out_text),void* data,int items_count,int height_in_items=-1)",
         # can check "signature" in argsT entry
 
         arg_type_info = {}
@@ -838,7 +874,7 @@ def get_jai_args(structs_and_enums, func_entry, target=False):
 
         optional_default, default_info = make_jai_default_arg(structs_and_enums, (func_entry['defaults'] or {}).get(name, None), arg_type)
 
-        if optional_default is not None and jai_arg_type == "*u8":
+        if False and optional_default is not None and jai_arg_type == "*u8":
             # jai as of beta 0.0.024 has a bug where string
             # default arguments to #foreign procs don't work,
             # so we'll wrap those functions.
@@ -868,6 +904,8 @@ def get_jai_args(structs_and_enums, func_entry, target=False):
         if optional_default is not None:
             default_str = f" = {optional_default}"
 
+        if name == "context":
+            name = "ctx" # 'context' cannot be used as an argument name in jai
         arg_info = ArgInfo(name, jai_arg_type, default_str, wrapper_arg_type, call_arg_value, parsed_arg_infos[i])
         if name == "pOut":
             return_arg_info = arg_info
@@ -886,7 +924,7 @@ def main():
 
     symbols = get_windows_symbols(PATH_TO_IMGUI_DLL)
     if len(symbols) == 0:
-        raise Exception("Couldn't read DLL symbols. Are you in a Visual Studio command prompt? The PATH must contain dumpbin.exe.")
+        raise Exception("Couldn't read DLL symbols (got 0). Are you in a Visual Studio command prompt? The PATH must contain dumpbin.exe.")
 
     # parse out their demangled descriptions and group them by function name
     symbols_grouped = group_symbols(symbols)
@@ -894,6 +932,9 @@ def main():
     # parse the structs/enums JSON
     structs_and_enums = load_structs_and_enums()
 
+    # We'll also generate a c++ program that prints out the sizes of types we're interested in,
+    # and then compare those sizes against the size_of() their Jai equivalent structs later.
+    # It's catastrophic if struct sizes don't match!
     ctx["output_file"] = open(OUTPUT_BINDINGS_JAI_FILE, "w")
     size_tester_file = open("imgui_sizes.cpp", "w")
 
@@ -902,6 +943,13 @@ def main():
         return p(*a, **k)
 
     p_sizer("""\
+//
+// DO NOT EDIT
+//
+// This file was autogenerated by generate_jai_wrapper.py and is used to print
+// out an easily parsable file showing the sizes of C++ structs.
+//
+
 #include <stdio.h>
 #define IMGUI_API __declspec(dllimport)
 #include "imgui.h"
@@ -913,6 +961,17 @@ int main(int argc, char** argv) {
 
     def p_sizer_for_name(name, jai_name):
         p_sizer(f"""    printf("{cimgui_name} {jai_name} %lld\\n", sizeof({cimgui_name}));""")
+
+    p(f"""
+//
+// DO NOT EDIT
+// 
+// This file was automaticlaly generated by generate_jai_wrapper.py and will be overwritten.
+//
+
+#module_parameters(LINK_STATIC := false);
+
+    """)
 
     #
     # enums
@@ -967,6 +1026,9 @@ int main(int argc, char** argv) {
             stats["skipped_internal_functions"] += 1
             continue
 
+        if ig_name in skip_functions:
+            continue
+
         for entry in overloads:
             if entry.get("destructor", False):
                 # print(f"TODO: destructor {entry['cimguiname']}")
@@ -978,9 +1040,6 @@ int main(int argc, char** argv) {
                 continue
 
             target = entry['cimguiname'] == "igGetWindowSize"
-            if target:
-                print(f"my little: {entry['cimguiname']}")
-
             args_info, needs_defaults_wrapper, return_arg_info = get_jai_args(structs_and_enums, entry, target)
 
             if return_arg_info is not None and target:
@@ -1021,18 +1080,68 @@ int main(int argc, char** argv) {
 
                 return dct
 
+            internal_args_info = list(args_info)
+            if len(args_info) >= 2:
+                # here we check to see if there are "name"/"name_end" type string
+                # pairs. we can convert them into functions that take strings, and
+                # avoid an annoying conversion to a null-terminated c-string from
+                # the jai side.
+                if diagnose:
+                    print("~~~~~~~~~~~\n", pformat(args_info), "\n~~~~~~~~~~~~")
+                skip_next = False
+                for i, arg_info in enumerate(list(args_info)):
+                    if skip_next:
+                        skip_next = False
+                        continue
+                    if i >= len(args_info) - 1: break
+
+                    next_arg_info = args_info[i + 1]
+
+                    # sometimes the argument pairs are like "text", "text_end"
+                    # but other times they are like "text_begin", "text_end"
+                    if (((next_arg_info.name == arg_info.name + "_end") or
+                        (next_arg_info.name.endswith("_end") and arg_info.name.endswith("_begin") and next_arg_info.name[:-4] == arg_info.name[:-6]))
+                        and arg_info.jai_arg_type == "*u8" and next_arg_info.jai_arg_type == "*u8"):
+
+                        needs_defaults_wrapper = True
+                        args_info[i] = clone_namedtuple(args_info[i], wrapper_arg_type="string")
+
+                        # make sure we don't use the _begin part in jai arguments
+                        first_arg_name = args_info[i].name
+                        if args_info[i].name.endswith("_begin"):
+                            first_arg_name = args_info[i].name[:-len("_begin")]
+                            args_info[i] = clone_namedtuple(args_info[i], name = first_arg_name)
+
+                        internal_args_info[i + 0] = clone_namedtuple(internal_args_info[i + 0], call_arg_value=f"{first_arg_name}.data")
+                        internal_args_info[i + 1] = clone_namedtuple(internal_args_info[i + 1], call_arg_value=f"{first_arg_name}.data + {first_arg_name}.count")
+                        args_info.pop(i + 1)
+                        skip_next = True
+                '''
+                [('return value (json, dll)', ('ImVec2', 'void'))]
+                ...stopping showing no matches
+                arg 0 const char* text {'name': 'text', 'type': 'const char*', 'jai_type': '*u8', 'default': None, 'is_constref': False}
+                arg 1 const char* text_end=((void*)0) {'name': 'text_end', 'type': 'const char*', 'jai_type': '*u8', 'default': '((void*)0)', 'is_constref': False}
+                jai_arg_type 0 const char* -> *u8
+                jai_arg_type 1 const char* -> *u8
+                === needs defaults wrapper:  False
+                dll_types ['*u8', '*u8']
+                orig      ['char const*', 'char const*']
+                ----
+                success for 'TextUnformatted': ?TextUnformatted@ImGui@@YAXPEBD0@Z
+                '''
+
             if needs_defaults_wrapper:
 
                 args_string = ", ".join("{name}: {meta_jai_type}{default_str}".format(**get_dict(k)) for k in args_info)
-                args_string_internal = ", ".join("{name}: {internal_jai_type}".format(**get_dict(k)) for k in args_info)
+                args_string_internal = ", ".join("{name}: {internal_jai_type}".format(**get_dict(k)) for k in internal_args_info)
                 wrapper_args_string = ", ".join("{name}: {wrapper_arg_type}{default_str}".format(**get_dict(k)) for k in args_info)
 
                 jai_func_name_internal = "_internal_" + entry['funcname']
-                call_args = ", ".join("{call_arg_value}".format(**k._asdict()) for k in args_info)
+                call_args = ", ".join("{call_arg_value}".format(**k._asdict()) for k in internal_args_info)
                 function_definition = f""" :: ({wrapper_args_string}){ret_val_with_arrow} {{
     {jai_func_name_internal} :: ({args_string_internal}){ret_val_with_arrow} {foreign_decl};
     {"return " if ret_val_with_arrow else ""}{jai_func_name_internal}({call_args});
-            }}"""
+}}"""
             else:
 
                 args_string = ", ".join(
@@ -1078,7 +1187,9 @@ int main(int argc, char** argv) {
         jai_struct_name = strip_im_prefixes(cimgui_name)
         if cimgui_name not in skip_structs_for_size:
             p_sizer_for_name(cimgui_name, jai_struct_name)
-        p(f"{jai_struct_name} :: struct {{")
+        struct_decoration = struct_decorations.get(jai_struct_name, '')
+        if struct_decoration: struct_decoration += " "
+        p(f"{jai_struct_name} :: struct {struct_decoration}{{")
         bitfield_state = []
         for field_idx, field in enumerate(fields):
             # TODO: things like ImGuiStoragePair have a field named "" for its union
@@ -1120,7 +1231,7 @@ int main(int argc, char** argv) {
         old_stats = json.load(open(stats_file, "r"))
         print("DELTA:")
         for k, v in stats.items():
-            print(f"    {v - old_stats[k]} {k}")
+            print(f"    {v - old_stats.get(k, 0)} {k}")
 
     open(stats_file, "w").write(json.dumps(stats))
 
@@ -1208,6 +1319,12 @@ def test_get_jai_func_ptr():
     res = get_jai_func_ptr(cpp_func)
     assert res == expected_jai_func,\
         "for: {}\nexpected: {}\nbut got:  {}".format(cpp_func, expected_jai_func, res)
+
+
+def clone_namedtuple(tupleobj, **kw):
+    original_values = tupleobj._asdict()
+    original_values.update(kw)
+    return tupleobj.__class__(**original_values)
 
 test_get_jai_func_ptr()
 

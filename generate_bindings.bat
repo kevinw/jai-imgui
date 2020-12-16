@@ -17,7 +17,7 @@ jai build.jai || exit /b
 echo.
 
 echo creating imgui_sizes.exe...
-cl imgui_sizes.cpp /Icimgui\imgui win\imgui.lib || exit /b
+cl imgui_sizes.cpp /Icimgui\imgui win\static\imgui.lib || exit /b
 echo.
 
 echo creating imgui_sizes.json...

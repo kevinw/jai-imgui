@@ -29,7 +29,10 @@ get_window_size :: (window: Window_Type) -> s32, s32 {
 }
 
 #if OS == .WINDOWS {
-    // jai's stdlib lacks mouse move evnets. install a windows hook and catch them.
+    // Jai's stdlib lacks mouse move events. Install a Windows "Hook" and catch them.
+    //
+    // Hopefully in the future it will be easier to provide custom WindowProc functionality
+    // through Jai's windows impl.
     HHOOK :: HANDLE;
     HOOKPROC :: #type (code: s32, wparam: WPARAM, lparam: LPARAM) -> LRESULT #c_call;
     WH_MOUSE :: 7;
@@ -94,6 +97,16 @@ render :: (window: Window_Type) {
     ImGui_Impl_RenderDrawData(*state.ui, ImGui.GetDrawData());
 }
 
+_imgui_alloc_context: Context;
+
+c_alloc :: (sz: u64, userdata: *void) -> *void #c_call {
+    push_context << cast(*Context)userdata { return alloc(cast(s64)sz); }
+}
+
+c_free :: (ptr: *void, userdata: *void) #c_call {
+    push_context << cast(*Context)userdata { free(ptr); }
+}
+
 main :: () {
     window := create_window(1200, 800, "ImGui OpenGL Test");
     setup_mousemove_hook();
@@ -101,6 +114,8 @@ main :: () {
     gl_create_context(window, 3, 2);
     gl_load(*gl);
 
+    _imgui_alloc_context = context;
+    ImGui.SetAllocatorFunctions(c_alloc, c_free, *_imgui_alloc_context);
     ImGui_Impl_CreateContext(*state.ui);
     ImGui.StyleColorsDark();
     ImGui_Impl_Init(*state.ui, window);

@@ -13,15 +13,19 @@ main :: () {
     #import "imgui";
 
     // to force these things into the type table
-    dummy1: IO;
-    dummy2: ListClipper;
-    dummy3: ImColor;
-    dummy4: OnceUponAFrame;
-    dummy5: PlatformIO;
-    dummy6: TextBuffer;
-    dummy7: ImDrawCornerFlags;
-    dummy8: TextBuffer;
-    dummy9: TextFilter = .{};
+    dummy1:  IO;
+    dummy2:  ListClipper;
+    dummy3:  ImColor;
+    dummy4:  OnceUponAFrame;
+    dummy5:  PlatformIO;
+    dummy6:  TextBuffer;
+    dummy7:  ImDrawCornerFlags;
+    dummy8:  TextBuffer;
+    dummy9:  TextFilter = .{};
+    dummy10: DockContext;
+    dummy11: MetricsConfig;
+    dummy12: NextItemData;
+    dummy13: NextWindowData;
 
     allowed_missing: []string = .[
         "TextFilter"
@@ -65,7 +69,14 @@ main :: () {
     }
 
     if any_did_warn {
-        print("error: sizes did not match!\n");
+        print(#string END\
+
+ERROR: sizes did not match!
+
+(test_sizes.jai attempts to verify that the bindings have been generated such
+that all the Jai structs have exactly the same size as their C++ counterparts,
+but we detected one or more mismatches.)
+END);
         exit(1);
     }
 }
