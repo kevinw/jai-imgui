@@ -6,7 +6,7 @@ An alpha-state alternate [Dear ImGui](https://github.com/ocornut/imgui) wrapper 
 
 Currently based on ImGui 1.80 WIP.
 
-Windows only at the moment. If you want to add mac or linux support, you need to implement a function like `get_windows_symbols` which demangles C++ function names from the DLL for your platform. Please send a pull request if you do! The Windows code uses `dumpbin.exe` for this purpose.
+Windows only at the moment. (If you want to add macOS or Linux support, you'll need to implement a function like `get_windows_symbols` which demangles C++ function names from the DLL for your platform. Please send a pull request if you do!) The Windows code uses `dumpbin.exe` for this purpose.
 
 The meat of this project is in `generate_jai_wrapper.py`.
 
@@ -14,7 +14,7 @@ This project makes an effort to preserve the convenience of the C++ API by:
 
 * maintaining default argument values
 * turning `label` and `label_end` `const char *` arguments into Jai strings
-* providing a module paramater for whether to link statically against ImGui or not
+* providing a module parameter for whether to link statically against ImGui or not
 
 ## Building demos
 
@@ -57,3 +57,7 @@ And finally generate the jai bindings.
 generate_bindings.bat
 ```
 
+## TODO
+
+* There are still lots of missing functions
+* There are many functions taking a single *u8 string argument which could use a Jai-string wrapper
