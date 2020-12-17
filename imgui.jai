@@ -3475,7 +3475,19 @@ TreeNode :: (fmt: string, args: ..Any) -> bool {
     return TreeNode(txt.data);
 }
 
-
+IM_COL32_R_SHIFT  ::  0;
+IM_COL32_G_SHIFT  ::  8;
+IM_COL32_B_SHIFT  ::  16;
+IM_COL32_A_SHIFT  ::  24;
+IM_COL32_A_MASK   ::  0xFF000000;
+// This is a C preprocessor macro, should it be a Jai macro?
+make_col32 :: (R : u32, G: u32, B: u32, A: u32) -> u32 {
+    return cast(u32)((A<<IM_COL32_A_SHIFT) | (B<<IM_COL32_B_SHIFT) | 
+        (G<<IM_COL32_G_SHIFT) | (R<<IM_COL32_R_SHIFT));
+}
+make_col32 :: (c: ImVec4) -> u32 {
+    return make_col32(xx(c.x * 255), xx(c.y * 255), xx(c.z * 255), xx(c.w * 255));
+}
 
 #scope_file
 
