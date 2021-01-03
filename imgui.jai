@@ -3495,13 +3495,14 @@ make_col32 :: (c: ImVec4) -> u32 {
 
 FLT_MAX :: 0h7F7FFFFF;
 
-#if OS == .WINDOWS
+#if OS == .WINDOWS {
+    user32 :: #foreign_system_library "user32"; // For GetClipboardData and related functions.
     #if LINK_STATIC {
         imgui_lib :: #foreign_library,no_dll "win/static/imgui";
     } else {
         imgui_lib :: #foreign_library "win/dll/imgui";
     }
-else
+} else
     #assert false, "TODO: implement this platform!";
 
 
