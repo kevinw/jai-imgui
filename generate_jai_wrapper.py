@@ -51,6 +51,7 @@ skip_functions        = frozenset([
     "igDockBuilderCopyDockSpace",
 ]) 
 skip_structs = frozenset([
+    "StyleMod", # added below manually because the imgui version has a weird union that isn't handled by cimgui properly
 ])
 diagnose_funcnames    = frozenset(sys.argv[1:]) # pass additional args on the commandline to print extra info for structs or functions which are missing
 
@@ -126,6 +127,15 @@ inline_functions = dict(
 )
 
 extra_code = """
+
+StyleMod :: struct {
+    VarIdx: StyleVar;
+    union {
+        BackupInt: [2]s32;
+        BackupFloat: [2]float;
+    }
+}
+
 
 ImSpan :: struct(T: Type) {
     Data:    *T;
@@ -286,16 +296,40 @@ def size_of_type(type):
     elif type == "unsigned int": return 32
     else: assert false, str(type)
 
-def get_jai_field(field, field_idx, fields):
+
+type_sizes = {
+    "unsigned int": 32,
+    "ImGuiDataAuthority": 32, # TODO
+    "ImGuiTableRowFlags": 32, # TODO
+    "ImGuiSortDirection": 32, # TODO
+    "ImGuiCond": 32,
+    "bool": 32,
+    "ImU8": 8,
+}
+
+def get_jai_field(field, field_idx, fields, bitfield_info):
     place = ''
 
     bitfield = field.get("bitfield", None)
-    if bitfield is not None:
+    bitfield_name_postfix = ''
+    if bitfield is None:
+        bitfield_info.clear()
+    else:
         bitfield = int(bitfield)
-        prev_field = fields[field_idx - 1] if field_idx > 0 else None
-        # TODO: flesh this out
-        if prev_field is not None and bitfield == 1 and prev_field.get("bitfield", None) == "31":
-            place = f"#place {prev_field['name']}; "
+
+        watermark = bitfield_info.get("watermark", -1)
+        if watermark != -1 and bitfield_info['type'] == field['type']:
+            if bitfield + watermark <= bitfield_info['field_size']:
+                place = f"#place {bitfield_info['name_of_first']}; /* bitfield {watermark} */ "
+                bitfield_name_postfix = f"_bitfield_{watermark}"
+                bitfield_info['watermark'] += bitfield
+                
+        if not place:
+            bitfield_info["watermark"] = bitfield
+            bitfield_info["field_size"] = type_sizes[field['type']]
+            bitfield_info["type"] = field['type']
+            bitfield_info["name_of_first"] = field["name"]
+
 
     template_type = field.get("template_type", None)
     if template_type is not None:
@@ -354,7 +388,7 @@ def get_jai_field(field, field_idx, fields):
             # so in this case we'll postfix the field name with an underscore.
             shortened_name = f"{shortened_name}_"
 
-    return place, shortened_name, jai_type
+    return place, shortened_name + bitfield_name_postfix, jai_type, bitfield_info
 
 def get_jai_func_ptr(jai_type):
     match = re.match(r"([^\(]+)\(([^\)]+)\)\((.*)\)", jai_type)
@@ -1189,7 +1223,7 @@ int main(int argc, char** argv) {
                     raise Exception(f"diagnosing {cimgui_name} but about to skip it!")
 
                 return False
-        
+
         return True
 
     all_structs = structs_and_enums["structs"].items()
@@ -1200,16 +1234,18 @@ int main(int argc, char** argv) {
         jai_struct_name = strip_im_prefixes(cimgui_name)
         if cimgui_name not in skip_structs_for_size:
             p_sizer_for_name(cimgui_name, jai_struct_name)
+        if jai_struct_name in skip_structs:
+            continue
         struct_decoration = struct_decorations.get(jai_struct_name, '')
         if struct_decoration: struct_decoration += " "
         p(f"{jai_struct_name} :: struct {struct_decoration}{{")
-        bitfield_state = []
+        bitfield_state = {}
         for field_idx, field in enumerate(fields):
             # TODO: things like ImGuiStoragePair have a field named "" for its union
             if field['name'] == "":
                 continue 
 
-            place, jai_name, jai_type = get_jai_field(field, field_idx, fields)
+            place, jai_name, jai_type, bitfield_info = get_jai_field(field, field_idx, fields, bitfield_state)
             p(f"    {place}{jai_name}: {jai_type};")
         struct_funcs = struct_functions.get(jai_struct_name, None)
         if struct_funcs is not None:

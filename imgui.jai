@@ -2050,7 +2050,7 @@ ImFontConfig :: struct {
 
 ImFontGlyph :: struct {
     Codepoint: u32;
-    #place Codepoint; Visible: u32;
+    #place Codepoint; /* bitfield 31 */ Visible_bitfield_31: u32;
     AdvanceX: float;
     X0: float;
     Y0: float;
@@ -2341,19 +2341,19 @@ DockNode :: struct {
     SelectedTabId: ID;
     WantCloseTabId: ID;
     AuthorityForPos: DataAuthority;
-    AuthorityForSize: DataAuthority;
-    AuthorityForViewport: DataAuthority;
+    #place AuthorityForPos; /* bitfield 3 */ AuthorityForSize_bitfield_3: DataAuthority;
+    #place AuthorityForPos; /* bitfield 6 */ AuthorityForViewport_bitfield_6: DataAuthority;
     IsVisible: bool;
-    IsFocused: bool;
-    HasCloseButton: bool;
-    HasWindowMenuButton: bool;
-    EnableCloseButton: bool;
-    WantCloseAll: bool;
-    WantLockSizeOnce: bool;
-    WantMouseMove: bool;
-    WantHiddenTabBarUpdate: bool;
-    WantHiddenTabBarToggle: bool;
-    MarkedForPosSizeWrite: bool;
+    #place IsVisible; /* bitfield 1 */ IsFocused_bitfield_1: bool;
+    #place IsVisible; /* bitfield 2 */ HasCloseButton_bitfield_2: bool;
+    #place IsVisible; /* bitfield 3 */ HasWindowMenuButton_bitfield_3: bool;
+    #place IsVisible; /* bitfield 4 */ EnableCloseButton_bitfield_4: bool;
+    #place IsVisible; /* bitfield 5 */ WantCloseAll_bitfield_5: bool;
+    #place IsVisible; /* bitfield 6 */ WantLockSizeOnce_bitfield_6: bool;
+    #place IsVisible; /* bitfield 7 */ WantMouseMove_bitfield_7: bool;
+    #place IsVisible; /* bitfield 8 */ WantHiddenTabBarUpdate_bitfield_8: bool;
+    #place IsVisible; /* bitfield 9 */ WantHiddenTabBarToggle_bitfield_9: bool;
+    #place IsVisible; /* bitfield 10 */ MarkedForPosSizeWrite_bitfield_10: bool;
 }
 
 GroupData :: struct {
@@ -2800,10 +2800,6 @@ Style :: struct {
     ScaleAllSizes     :: (self: *Style, scale_factor: float) #foreign imgui_lib "?ScaleAllSizes@ImGuiStyle@@QEAAXM@Z";
 }
 
-StyleMod :: struct {
-    VarIdx: StyleVar;
-}
-
 TabBar :: struct {
     Tabs: ImVector(TabItem);
     Flags: TabBarFlags;
@@ -2878,7 +2874,7 @@ Table :: struct {
     RowTextBaseline: float;
     RowIndentOffsetX: float;
     RowFlags: TableRowFlags;
-    LastRowFlags: TableRowFlags;
+    #place RowFlags; /* bitfield 16 */ LastRowFlags_bitfield_16: TableRowFlags;
     RowBgColorCounter: s32;
     RowBgColor: [2]u32;
     BorderColorStrong: u32;
@@ -3002,8 +2998,8 @@ TableColumn :: struct {
     AutoFitQueue: u8;
     CannotSkipItemsQueue: u8;
     SortDirection: u8;
-    SortDirectionsAvailCount: u8;
-    SortDirectionsAvailMask: u8;
+    #place SortDirection; /* bitfield 2 */ SortDirectionsAvailCount_bitfield_2: u8;
+    #place SortDirection; /* bitfield 4 */ SortDirectionsAvailMask_bitfield_4: u8;
     SortDirectionsAvailList: u8;
 }
 
@@ -3014,8 +3010,8 @@ TableColumnSettings :: struct {
     DisplayOrder: TableColumnIdx;
     SortOrder: TableColumnIdx;
     SortDirection: u8;
-    IsEnabled: u8;
-    IsStretch: u8;
+    #place SortDirection; /* bitfield 2 */ IsEnabled_bitfield_2: u8;
+    #place SortDirection; /* bitfield 3 */ IsStretch_bitfield_3: u8;
 }
 
 TableColumnSortSpecs :: struct {
@@ -3167,9 +3163,9 @@ Window :: struct {
     HiddenFramesCannotSkipItems: s8;
     HiddenFramesForRenderOnly: s8;
     SetWindowPosAllowFlags: Cond;
-    SetWindowSizeAllowFlags: Cond;
-    SetWindowCollapsedAllowFlags: Cond;
-    SetWindowDockAllowFlags: Cond;
+    #place SetWindowPosAllowFlags; /* bitfield 8 */ SetWindowSizeAllowFlags_bitfield_8: Cond;
+    #place SetWindowPosAllowFlags; /* bitfield 16 */ SetWindowCollapsedAllowFlags_bitfield_16: Cond;
+    #place SetWindowPosAllowFlags; /* bitfield 24 */ SetWindowDockAllowFlags_bitfield_24: Cond;
     SetWindowPosVal: ImVec2;
     SetWindowPosPivot: ImVec2;
     IDStack: ImVector(ID);
@@ -3212,8 +3208,8 @@ Window :: struct {
     DockTabItemRect: ImRect;
     DockOrder: s16;
     DockIsActive: bool;
-    DockTabIsVisible: bool;
-    DockTabWantClose: bool;
+    #place DockIsActive; /* bitfield 1 */ DockTabIsVisible_bitfield_1: bool;
+    #place DockIsActive; /* bitfield 2 */ DockTabWantClose_bitfield_2: bool;
 
     CalcFontSize           :: (self: *Window) -> float #foreign imgui_lib "?CalcFontSize@ImGuiWindow@@QEBAMXZ";
     GetID                  :: (self: *Window, str: string) -> ID {
@@ -3415,6 +3411,15 @@ StbUndoState :: struct {
     redo_char_point: s32;
 }
 
+
+
+StyleMod :: struct {
+    VarIdx: StyleVar;
+    union {
+        BackupInt: [2]s32;
+        BackupFloat: [2]float;
+    }
+}
 
 
 ImSpan :: struct(T: Type) {
