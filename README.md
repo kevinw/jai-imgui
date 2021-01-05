@@ -1,6 +1,9 @@
 # jai-imgui
 
-An alpha-state alternate [Dear ImGui](https://github.com/ocornut/imgui) wrapper for Jai.
+
+### NOTE: Jai comes with a working ImGui module. It's just based on an older version, and written by hand.
+
+This is an alpha-state alternate [Dear ImGui](https://github.com/ocornut/imgui) wrapper for Jai with an automatic C++ <-> Jai bindings generator.
 
 ![a screenshot showing the demo window](docs/screenshot1.png)
 
