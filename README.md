@@ -7,7 +7,7 @@ This is an alpha-state alternate [Dear ImGui](https://github.com/ocornut/imgui) 
 
 ![a screenshot showing the demo window](docs/screenshot1.png)
 
-Currently based on ImGui 1.80 WIP.
+Currently this repo has binaries for the `docking` branch of ImGui 1.80 WIP.
 
 Windows only at the moment. (If you want to add macOS or Linux support, you'll need to implement a function like `get_windows_symbols` which demangles C++ function names from the DLL for your platform. Please send a pull request if you do!) The Windows code uses [dumpbin.exe](https://docs.microsoft.com/en-us/cpp/build/reference/dumpbin-reference) for this purpose.
 
