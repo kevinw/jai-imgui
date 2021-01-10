@@ -1,6 +1,10 @@
+#module_parameters(IMGUI_USE_BGRA_PACKED_COLOR := true);
 
-// an imgui "implementation" based on builtin modules
 //
+// An ImGui "implementation" based on Jai's builtin Window_Creation module and
+// OpenGL.
+//
+
 #import "Basic";
 #import "Window_Creation";
 #import "Math";
@@ -8,8 +12,7 @@
 Clipboard :: #import "Clipboard";
 Input :: #import "Input";
 
-
-ImGui :: #import "imgui";
+ImGui :: #import "imgui"(LINK_STATIC=true);
 ImDrawIdx :: ImGui.ImDrawIdx;
 make_ImVec2 :: ImGui.make_ImVec2;
 
@@ -51,10 +54,10 @@ ImGui_Impl_RenderDrawData :: (using ui_state: *UI_State, draw_data: *ImGui.ImDra
 
     // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
     io := ImGui.GetIO();
-    fb_width  := (io.DisplaySize.x * io.DisplayFramebufferScale.x);
+    fb_width := (io.DisplaySize.x * io.DisplayFramebufferScale.x);
     fb_height := (io.DisplaySize.y * io.DisplayFramebufferScale.y);
     if fb_width == 0 || fb_height == 0 return;
-    draw_data.ScaleClipRects(draw_data, *io.DisplayFramebufferScale);
+    draw_data.ScaleClipRects(draw_data, io.DisplayFramebufferScale);
 
     // Backup GL state
     last_active_texture: GLenum;        glGetIntegerv(GL_ACTIVE_TEXTURE, xx *last_active_texture);
@@ -251,7 +254,7 @@ ImGui_Impl_CreateDeviceObjects :: (using ui_state: *UI_State) -> bool {
     glGetIntegerv(GL_ARRAY_BUFFER_BINDING, xx *last_array_buffer);
     glGetIntegerv(GL_VERTEX_ARRAY_BINDING, xx *last_vertex_array);
 
-    vertex_shader := #string END
+    vertex_shader := tprint(#string END
         #version 330
         uniform mat4 ProjMtx;
         in vec2 Position;
@@ -261,10 +264,15 @@ ImGui_Impl_CreateDeviceObjects :: (using ui_state: *UI_State) -> bool {
         out vec4 Frag_Color;
         void main() {
            Frag_UV = UV;
-           Frag_Color = Color;
+           // By default, the binaries shipped with jai-imgui are built with IMGUI_USE_BGRA_PACKED_COLOR.
+           // This is more efficient in D3D11, but in opengl there's no way to specify the input buffers
+           // format to be BGRA, so we just do the swizzle here if our module parameter, also named
+           // IMGUI_USE_BGRA_PACKED_COLOR, is true.
+           Frag_Color = Color.%;
            gl_Position = ProjMtx * vec4(Position.xy,0,1);
         }
-    END
+    END,
+        ifx IMGUI_USE_BGRA_PACKED_COLOR then "bgra" else "rgba");
 
     fragment_shader := #string END
         #version 330

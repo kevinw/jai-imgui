@@ -11,7 +11,7 @@
 }
 #scope_module
 
-#load "imgui_impl.jai";
+#import "imgui_impl_gl";
 
 state: struct {
     ui: UI_State;
@@ -94,7 +94,7 @@ render :: (window: Window_Type) {
     ImGui.Render();
 
     glViewport(0, 0, xx w, xx h);
-    glClearColor(1, 1, 1, 1);
+    glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT);
     ImGui_Impl_RenderDrawData(*state.ui, ImGui.GetDrawData());
 }
