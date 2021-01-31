@@ -11,7 +11,7 @@ Currently this repo has binaries for the `docking` branch of ImGui 1.80 WIP.
 
 Windows only at the moment. (If you want to add macOS or Linux support, you'll need to implement a function like `get_windows_symbols` which demangles C++ function names from the DLL for your platform. Please send a pull request if you do!) The Windows code uses [dumpbin.exe](https://docs.microsoft.com/en-us/cpp/build/reference/dumpbin-reference) for this purpose.
 
-The meat of this project is in [generate_jai_wrapper.py](generate_jai_wrapper.py).
+The meat of this project is in [generate_jai_wrapper.py](generate_jai_wrapper.py). (In the future I would like to move all of my bindings to use `jaicc`, the example clang-based program that ships with Jai as an example, which is a more automatic and future-proof solution.)
 
 This project makes an effort to preserve the convenience of the C++ API by:
 

@@ -1,7 +1,5 @@
 '''
 Generates Jai bindings for imgui from the JSON emitted by the cimgui project.
-
-TODO: RVO functions are failing. see http://www.cplusplus.com/forum/general/228878/
 '''
 
 import ast
@@ -921,16 +919,7 @@ def get_jai_args(structs_and_enums, func_entry, target=False):
 
         optional_default, default_info = make_jai_default_arg(structs_and_enums, (func_entry['defaults'] or {}).get(name, None), arg_type)
 
-        if False and optional_default is not None and jai_arg_type == "*u8":
-            # jai as of beta 0.0.024 has a bug where string
-            # default arguments to #foreign procs don't work,
-            # so we'll wrap those functions.
-            needs_defaults_wrapper = True
-            wrapper_arg_type = "string";
-            call_arg_value = name + ".data"
-            if optional_default == "null":
-                optional_default = '""'
-        elif optional_default is not None and not parsed_arg.get('func') and count_pointers(parsed_arg['jai_type']) == 1 and default_info.get("was_constructor"):
+        if optional_default is not None and not parsed_arg.get('func') and count_pointers(parsed_arg['jai_type']) == 1 and default_info.get("was_constructor"):
             needs_defaults_wrapper = True
             wrapper_arg_type = strip_pointer_or_array(parsed_arg['jai_type'])
             call_arg_value = "*" + name
@@ -1114,11 +1103,17 @@ int main(int argc, char** argv) {
 
             stats['actual_function_matches'] += 1
 
+            def array_pointer(meta_jai_type):
+                if re.match(r"\[\d", meta_jai_type):
+                    meta_jai_type = "*" + meta_jai_type
+                return meta_jai_type
+
             def get_dict(k):
                 dct = k._asdict()
                 dct.update(meta_jai_type=to_jai_type(k.meta["type"]))
 
                 dct['internal_jai_type'] = dct['meta_jai_type']
+                dct['display_type'] = array_pointer(dct['meta_jai_type'])
 
                 info = {}
                 to_jai_type(k.meta['type'], info)
@@ -1163,23 +1158,9 @@ int main(int argc, char** argv) {
                         internal_args_info[i + 1] = clone_namedtuple(internal_args_info[i + 1], call_arg_value=f"{first_arg_name}.data + {first_arg_name}.count")
                         args_info.pop(i + 1)
                         skip_next = True
-                '''
-                [('return value (json, dll)', ('ImVec2', 'void'))]
-                ...stopping showing no matches
-                arg 0 const char* text {'name': 'text', 'type': 'const char*', 'jai_type': '*u8', 'default': None, 'is_constref': False}
-                arg 1 const char* text_end=((void*)0) {'name': 'text_end', 'type': 'const char*', 'jai_type': '*u8', 'default': '((void*)0)', 'is_constref': False}
-                jai_arg_type 0 const char* -> *u8
-                jai_arg_type 1 const char* -> *u8
-                === needs defaults wrapper:  False
-                dll_types ['*u8', '*u8']
-                orig      ['char const*', 'char const*']
-                ----
-                success for 'TextUnformatted': ?TextUnformatted@ImGui@@YAXPEBD0@Z
-                '''
-
+                
             if needs_defaults_wrapper:
-
-                args_string = ", ".join("{name}: {meta_jai_type}{default_str}".format(**get_dict(k)) for k in args_info)
+                args_string = ", ".join("{name}: {display_type}{default_str}".format(**get_dict(k)) for k in args_info)
                 args_string_internal = ", ".join("{name}: {internal_jai_type}".format(**get_dict(k)) for k in internal_args_info)
                 wrapper_args_string = ", ".join("{name}: {wrapper_arg_type}{default_str}".format(**get_dict(k)) for k in args_info)
 
@@ -1192,7 +1173,7 @@ int main(int argc, char** argv) {
             else:
 
                 args_string = ", ".join(
-                    "{name}: {meta_jai_type}{default_str}".format(**get_dict(k))
+                    "{name}: {display_type}{default_str}".format(**get_dict(k))
                     for k in args_info)
                 function_definition = f" :: ({args_string}){ret_val_with_arrow} {foreign_decl};"
 
