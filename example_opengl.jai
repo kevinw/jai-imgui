@@ -1,26 +1,10 @@
-#import "Window_Creation";
-#import "Input";
-#import "GL";
-#import "Basic";
-#import "Render";
-#import "Basic";
-
-#scope_file
-#if OS == .WINDOWS {
-	#import "Windows";
-}
-#scope_module
-
-#import "imgui_impl_gl";
-
 state: struct {
     ui: UI_State;
 
     quit: bool;
     demo_window_open: bool = true;
+    mouse_did_move := false;
 };
-
-mouse_did_move := false;
 
 get_window_size :: (window: Window_Type) -> s32, s32 {
     #if OS == .WINDOWS {
@@ -44,7 +28,7 @@ get_window_size :: (window: Window_Type) -> s32, s32 {
     SetWindowsHookExA :: (id_hook: s32, hook_fn: HOOKPROC, hmod: HINSTANCE, thread_id: DWORD) -> HHOOK #foreign user32;
 
     HookProc :: (code: s32, wparam: WPARAM, lparam: LPARAM) -> LRESULT #c_call {
-        mouse_did_move = true;
+        state.mouse_did_move = true;
         return CallNextHookEx(null, code, wparam, lparam);
     }
 
@@ -71,8 +55,8 @@ frame :: (window: Window_Type) -> did_render: bool {
         }
     }
 
-    need_to_render |= mouse_did_move;
-    mouse_did_move = false;
+    need_to_render |= state.mouse_did_move;
+    state.mouse_did_move = false;
 
     if manual_redraws > 0 {
         manual_redraws -= 1;
@@ -99,16 +83,6 @@ render :: (window: Window_Type) {
     ImGui_Impl_RenderDrawData(*state.ui, ImGui.GetDrawData());
 }
 
-_imgui_alloc_context: Context;
-
-c_alloc :: (sz: u64, userdata: *void) -> *void #c_call {
-    push_context << cast(*Context)userdata { return alloc(cast(s64)sz); }
-}
-
-c_free :: (ptr: *void, userdata: *void) #c_call {
-    push_context << cast(*Context)userdata { free(ptr); }
-}
-
 main :: () {
     window := create_window(1200, 800, "ImGui OpenGL Test");
     setup_mousemove_hook();
@@ -116,9 +90,7 @@ main :: () {
     gl_create_context(window, 3, 2);
     gl_load(*gl);
 
-    _imgui_alloc_context = context;
-    ImGui.SetAllocatorFunctions(c_alloc, c_free, *_imgui_alloc_context);
-    ImGui_Impl_CreateContext(*state.ui);
+    ImGui_Impl_CreateContext(*state.ui, set_default_allocators=true);
     ImGui.StyleColorsDark();
     ImGui_Impl_Init(*state.ui, window);
 
@@ -131,4 +103,15 @@ main :: () {
 
     print("OK!\n");
 }
+
+#scope_file
+
+#import "Window_Creation";
+#import "Input";
+#import "GL";
+#import "Basic";
+#if OS == .WINDOWS
+	#import "Windows";
+
+#import "imgui_impl_gl";
 

@@ -36,15 +36,28 @@ UI_State :: struct {
     ElementsHandle: GLuint = 0;
 };
 
-_render_ui_state: *UI_State;
+_imgui_alloc_context: Context;
 
-ImGui_Impl_CreateContext :: (using ui_state: *UI_State) {
+c_alloc :: (sz: u64, userdata: *void) -> *void #c_call {
+    push_context << cast(*Context)userdata { return alloc(cast(s64)sz); }
+}
+
+c_free :: (ptr: *void, userdata: *void) #c_call {
+    push_context << cast(*Context)userdata { free(ptr); }
+}
+
+
+ImGui_Impl_CreateContext :: (using ui_state: *UI_State, $set_default_allocators := true) {
+    #if set_default_allocators {
+        _imgui_alloc_context = context;
+        ImGui.SetAllocatorFunctions(c_alloc, c_free, *_imgui_alloc_context);
+    }
+
     ctx = ImGui.CreateContext();
 
     io := ImGui.GetIO();
     io.ConfigFlags_ |= .DockingEnable;
 }
-
 
 // This is the main rendering function that you have to implement and provide to ImGui (via setting up 'RenderDrawListsFn' in the ImGuiIO structure)
 // Note that this implementation is little overcomplicated because we are saving/setting up/restoring every OpenGL state explicitly, in order to be able to run within any OpenGL engine that doesn't do so. 
@@ -387,11 +400,6 @@ ImGui_Impl_Init :: (using ui_state: *UI_State, native_window_handle: *void) -> b
     io.GetClipboardTextFn = ImGui_Impl_GetClipboardText;
     io.ClipboardUserData = null;
 
-    #if OS == .WINDOWS {
-        // TODO: did imgui remove ImeWindowHandle?
-        //io.ImeWindowHandle = native_window_handle;
-    }
-
     // TODO: Cursors
 
     ImGui_Impl_CreateDeviceObjects(ui_state);
@@ -408,8 +416,6 @@ ImGui_ImplSdl_Shutdown :: (ui_state: *UI_State) {
 
 ImGui_Impl_NewFrame :: (ui_state: *UI_State, native_window_handle: *void, display_width: s32, display_height: s32) {
     using ui_state;
-
-    _render_ui_state = ui_state; // TODO
 
     io := ImGui.GetIO();
 
