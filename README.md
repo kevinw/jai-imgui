@@ -1,9 +1,11 @@
 # jai-imgui
 
 
-### NOTE: Jai comes with a working ImGui module. It's just based on an older version, and written by hand.
+### Use at your own risk. This software is alpha-state and "free as in mattress," in that it probably has bugs, and comes with no guarantee.
 
-This is an alpha-state alternate [Dear ImGui](https://github.com/ocornut/imgui) wrapper for Jai with an automatic C++ <-> Jai bindings generator.
+#### Jai comes with a working ImGui module. It's just based on an older version, and written by hand. I'm working on a better version of these bindings based on `jaicc`, but they're still a WIP. But I highly recommend using clang or an actual C++ compiler--not Python--to generate your bindings for C++ libraries.
+
+This is an [Dear ImGui](https://github.com/ocornut/imgui) wrapper for Jai.
 
 ![a screenshot showing the demo window](docs/screenshot1.png)
 
