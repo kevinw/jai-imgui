@@ -17,6 +17,7 @@
 @REM
 @REM update the imgui git repo
 @REM
+git submodule update --init
 pushd imgui || exit /b 1
 git checkout %IMGUI_BRANCH% && git pull origin %IMGUI_BRANCH% || exit /b 1
 

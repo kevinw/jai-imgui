@@ -1,13 +1,12 @@
 //
 // Generates Jai wrappers for C++ headers.
 //
-// Based on the original "jaicc" code by Josh Huelsman.
-//
 
-// TODO: this could probably just leverage the built-in Program_Print/Compiler
-// modules now, and generate things with a tree of Code_Nodes. That would make
-// the entire set of Declaration/Struct/Typedef/etc structs obsolete, and all
-// of this shorter/more future-proof.
+// a TODO for those of your feeling entrepreneurial: this could probably just
+// leverage the built-in Program_Print/Compiler modules now, and generate
+// things with a tree of Code_Nodes. That would make the entire set of
+// Declaration/Struct/Typedef/etc structs obsolete, and all of this
+// shorter/more future-proof.
 
 #load "generated_clang.jai";
 #import "Basic";
@@ -198,6 +197,9 @@ Library_Info :: struct {
     name: string;
     path: string; // This should be just what the user has passed to us via -l, I think
     is_system: bool;
+
+    static_path: string;
+    static_depends_on_libs: [..]string;
 
     #if OS == .WINDOWS {
         handle: HMODULE;
@@ -2294,9 +2296,11 @@ print_struct :: (builder: *String_Builder, str: *Struct) {
     print_indentation(builder);
     append(builder, "}");
 
-    if str.name && context.opts.generate_static_struct_size_checks && str.template_type_params.count == 0 {
-        if !(str.flags & .IS_ANON)
-            print_to_builder(builder, "\n#run check_struct_size(%, %);", stripped_name(str.name), str.type.size);
+    if str.name && str.template_type_params.count == 0 && !(str.flags & .IS_ANON) {
+        append(builder, "\n");
+        if !context.opts.generate_static_struct_size_checks
+            append(builder, "// ");
+        print_to_builder(builder, "#run check_size(%, %);", stripped_name(str.name), str.type.size);
     }
 }
 
@@ -2367,12 +2371,17 @@ error :: (cur: CXCursor, msg: string, args: ..Any) {
     PATH_SEPARATOR_STRING :: "/";
 }
 
-os_load_library_helper :: (paths: [] string, name: string) -> type_of(Library_Info.handle) {
+os_load_library_helper :: (paths_in: [] string, name: string) -> type_of(Library_Info.handle) {
     handle: type_of(Library_Info.handle);
+
+    paths := paths_in;
+    if paths.count == 0 {
+        paths = string.["."];
+    }
 
     for paths {
         tpath := concatenate(it, PATH_SEPARATOR_STRING, name, "\0");
-        //print("full path: %\n", tpath);
+        print("full path: %\n", tpath);
         wide_path_data, success, w_len := utf8_to_wide(tpath);
         assert(success);
 
@@ -2442,46 +2451,55 @@ make_valid_identifer :: (str: string) -> string {
 }
 
 Generate_Bindings_Options :: struct {
-    //
-    // What jai file to generate
-    //
+    // ## What jai file to generate
     output_filename := "out.jai";
 
-    //
-    // Input options for clang
-    //
+    // ## Input options for clang
+    libraries: [..]Library_Info;
     libnames: [..]string;
     libpaths: [..]string;
     include_paths: [..]string;
     source_files: [..]string;
     extra_clang_arguments: [..]string;
 
-    //
-    // Options to change the generated output.
-    //
+
+    // ## Options to change the generated output.
+
+    // A list of namespaces to flatten. Normally namespace become structs with
+    // functions, but any namespaces in this list will have their functions
+    // just become global declarations.
     flatten_namespaces:            [..]string;
+
+    // A common prefix to strip from functions and structs.
     strip_prefix:                  string;
+
     strip_enum_prefixes            := true;
     strip_enum_values_with_suffix: string;
     strip_enum_value_prefixes:     [..][2]string;
+
+    // Jai cannot currently link to global variables declared in libraries. When true, any global variables will be omitted.
     omit_global_declarations       := true;
+
     type_replacements:             [..][2]string;
+
     strip_flags := Strip_Flags.Constructors | .Destructors |
         .Functions_With_Bodies | .Functions_With_valist |
         .Functions_With_Unknown_Foreign_Libs;
+    print_foreign_library_declarations := true;
+
+    // Any extra code to include.
     preamble := "";
 
     c_enum_emulation := false; // use 'using' on each enum declaration to bring all its members into scope
-    generate_static_struct_size_checks := true;
+    generate_static_struct_size_checks := false;
 
     //
     // Optionally give it whatever data you like. Will be passed to callback functions.
     //
     user_data: *void;
 
-    //
-    // Callback functions
-    //
+    // ## Callback functions
+
     get_func_args_for_printing: Get_Function_Arguments_For_Printing_Func;
     will_print_bindings: #type ();
 
@@ -2500,6 +2518,13 @@ generate_bindings :: (opts: Generate_Bindings_Options) -> (has_error: bool) {
 
     //assert(*context.global_scope.members == *context.compiler.global_scope.members); // Jai compiler bug
     //print("first global_scope.members: %\n", *context.compiler.global_scope.members);
+
+    for context.opts.libraries {
+        ptr := New(Library_Info);
+        (<<ptr) = it;
+        ptr.handle, ptr.is_system = os_load_library(.[], ptr.path);
+        array_add(*context.compiler.libraries, ptr);
+    }
 
     for context.opts.libnames {
         lib := New(Library_Info);
@@ -2552,11 +2577,18 @@ generate_bindings :: (opts: Generate_Bindings_Options) -> (has_error: bool) {
         jai_ctx := context;
         clang_visitChildren(cursor, handle_toplevel_cursors, *jai_ctx);
 
+        if context.opts.will_print_bindings
+            context.opts.will_print_bindings();
+
         builder: String_Builder;
         print_to_builder(*builder, #string END
 //
 // This file was autogenerated.
 //
+END);
+        append(*builder, context.opts.preamble);
+        append(*builder, "\n\n");
+        print_to_builder(*builder, #string END
 #scope_file
 
 #import "Basic";
@@ -2566,7 +2598,7 @@ FILE     :: struct { opaque: *void; }
 FLT_MIN  :: 0h00800000;
 FLT_MAX  :: 0h7F7FFFFF;
 
-check_struct_size :: ($T: Type, expected_size_in_bytes: int, loc := #caller_location) {
+check_size :: ($T: Type, expected_size_in_bytes: int, loc := #caller_location) {
     size_of_struct := size_of(T);
     Compiler :: #import "Compiler";
     if size_of_struct != expected_size_in_bytes {
@@ -2576,19 +2608,13 @@ check_struct_size :: ($T: Type, expected_size_in_bytes: int, loc := #caller_loca
 }
 
 #scope_export
-
 END);
-
-        append(*builder, opts.preamble);
-        append(*builder, "\n\n");
-
-        for context.compiler.libraries {
-            if it.is_system print_to_builder(*builder, "% :: #foreign_system_library \"%\";\n", it.name, it.path);
-            else print_to_builder(*builder, "% :: #foreign_library \"%\";\n", it.name, it.path);
+        if context.opts.print_foreign_library_declarations {
+            for context.compiler.libraries {
+                if it.is_system print_to_builder(*builder, "% :: #foreign_system_library \"%\";\n", it.name, it.path);
+                else print_to_builder(*builder, "% :: #foreign_library \"%\";\n", it.name, it.path);
+            }
         }
-
-        if context.opts.will_print_bindings
-            context.opts.will_print_bindings();
 
         print("printing % global scope members...\n", context.compiler.global_scope.members.count);
         for context.compiler.global_scope.members {
@@ -2639,125 +2665,6 @@ END);
     }
 
     return has_error;
-}
-
-main :: () {
-    Debug :: #import "Debug";
-    Debug.init();
-
-    string_pair_from_equals_expr :: (opt: string) -> bool, [2]string {
-        parts := split(opt, "=");
-        if parts.count != 2 return false, .["", ""];
-
-        string_pair: [2]string;
-        string_pair[0] = parts[0];
-        string_pair[1] = parts[1];
-        return true, string_pair;
-    }
-
-    opts: Generate_Bindings_Options;
-
-    args := get_command_line_arguments();
-    has_error := false;
-    for 1..args.count - 1 {
-        ar := args[it];
-
-        // @TODO what if the user passes in a path?
-        if begins_with(ar, "-l") {
-            if ar == "-l" {
-                if it < args.count-1 {
-                    array_add(*opts.libnames, args[it+1]);
-                    it += 1;
-                } else error("option '-l' must be followed by a library name!\n");
-            } else {
-                name := ar;
-                advance(*name, 2);
-                array_add(*opts.libnames, name);
-            }
-        } else if begins_with(ar, "-o") {
-            if ar == "-o" {
-                if it < args.count-1 {
-                    opts.output_filename = args[it+1];
-                    it += 1;
-                } else error("option '-o' must be followed by a file name!\n");
-            } else { 
-                name := ar;
-                advance(*name, 2);
-                opts.output_filename = name;
-            }
-        } else if begins_with(ar, "-L") {
-            if ar == "-L" {
-                if it < args.count-1 {
-                    array_add(*opts.libpaths, args[it+1]);
-                    it += 1;
-                } else error("option '-L' must be followed by a path!\n");
-            } else { 
-                name := ar;
-                advance(*name, 2);
-                array_add(*opts.libpaths, name);
-            }
-        } else if ar == "--inspect" {
-            if it < args.count - 1 {
-                array_add(*opts.inspect_entities_named, args[it + 1]);
-                it += 1;
-            } else error("options '--inspect' must be followed by an entity name to inspect\n");
-        } else if ar == "--flatten-namespace" {
-            if it < args.count - 1 {
-                array_add(*opts.flatten_namespaces, args[it + 1]);
-                it += 1;
-            } else error("option '--flatten-namespace' must be followed by a namespace name\n");
-        } else if ar == "--strip-prefix" {
-            if it < args.count - 1 {
-                opts.strip_prefix = args[it + 1];
-                it += 1;
-            } else error("option '--strip-prefix' must be followed by a prefix!\n");
-        } else if ar == "--omit-global-declarations" {
-            opts.omit_global_declarations = true;
-        } else if ar == "--strip-enum-values-with-suffix" {
-            if it < args.count - 1 {
-                opts.strip_enum_values_with_suffix = args[it + 1];
-                it += 1;
-            } else error("option '--strip-enum-values-with-suffix' must be followed by a suffix!\n");
-        } else if ar == "--type-replacement" {
-            MSG :: "option '--strip-enum-value-prefix' must be followed by a prefix like \"enumName=valuePrefix\"!\n";
-            if it < args.count - 1 {
-                ok, string_pair := string_pair_from_equals_expr(args[it + 1]);
-                if !ok error(MSG);
-                array_add(*opts.type_replacements, string_pair);
-                it += 1;
-            } else error(MSG);
-        } else if ar == "--strip-enum-value-prefix" {
-            MSG :: "option '--strip-enum-value-prefix' must be followed by a prefix like \"enumName=valuePrefix\"!\n";
-            if it < args.count - 1 {
-                opt := args[it + 1];
-                ok, string_pair := string_pair_from_equals_expr(opt);
-                if !ok error(MSG);
-                array_add(*opts.strip_enum_value_prefixes, string_pair);
-                it += 1;
-            } else error(MSG);
-        } else {
-            if !begins_with(ar, "-") {
-                // assuming source file doesnt start with a dash for
-                // short-term simplicity's sake.
-                if !file_exists(ar) {
-                    error("Error: file '%' could not be found.\n", ar);
-                    has_error = true;
-                } else {
-                    array_add(*opts.source_files, ar);
-                }
-            }
-
-            // pass the option onto clang
-            array_add(*opts.extra_clang_arguments, ar);
-        }
-    }
-
-    generate_bindings(opts);
-
-    if has_error
-        exit(1);
-    else
-        show_jaicc_results();
 }
 
 show_jaicc_results :: () {

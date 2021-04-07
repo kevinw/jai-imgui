@@ -1,0 +1,11 @@
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+x64/
+.build/
+.vs/
+bin/jaicc.exe
+bin/jaicc.pdb
+
+
