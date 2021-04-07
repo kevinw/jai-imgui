@@ -6,7 +6,7 @@
     opts.output_type = .NO_OUTPUT;
     set_build_options(opts);
 
-    #load "../eng/lib/jaicc/jaicc.jai";
+    #load "jaicpp/jaicpp.jai";
     generate_imgui_bindings();
 }();
 
