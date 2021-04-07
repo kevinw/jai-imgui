@@ -30,6 +30,16 @@ One gotcha here: there's an ImGui module included in Jai. The demos expect THIS 
 
 ## Regenerating bindings from scratch
 
+It's important to generate bindings with the same `#define` config values as the binaries you're using were built with. To simplify this process, all the config this project uses is in [jai-imgui.cpp](jai-imgui.cpp). The values currently are
+
+```
+#define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
+#define IMGUI_DISABLE_DEFAULT_ALLOCATORS
+#define IMGUI_USE_BGRA_PACKED_COLOR
+```
+
+but you can modify them however you like.
+
 The ImGui project itself sits in a subrepository in the `imgui` directory.
 
 To update the ImGui headers, and rebuild `win/static/imgui.lib` and `win/dll/imgui.dll`:
@@ -38,7 +48,7 @@ To update the ImGui headers, and rebuild `win/static/imgui.lib` and `win/dll/img
 update_imgui_subrepro_and_rebuild_libs.bat
 ```
 
-To generate `imgui.jai`:
+Then, to regenerate `imgui.jai`:
 
 ```
 jai generate_imgui_bindings.jai
