@@ -6,6 +6,16 @@
 #ifndef JAI_IMGUI_BUILDING_IMPLEMENTATION
 // Just include the headers for the bindings generator.
 #include "imgui.h"
+
+// Save some preprocessor values for Jai
+namespace Preprocessor_Defines {
+    const bool USE_BGRA_PACKED_COLOR =
+        #ifdef IMGUI_USE_BGRA_PACKED_COLOR
+            true;
+        #else
+            false;
+        #endif
+}
 #else
 // Building the libraries.
 #include "imgui.cpp"

@@ -114,6 +114,7 @@ Declaration_Flags :: enum_flags {
     Pointer_To_Value; // TODO: rename this to "Reference_Argument" or something
     Omit_From_Output;
     Needs_Default_Argument_Cast;
+    Is_Const;
 }
 
 Function :: struct {
@@ -197,10 +198,6 @@ Library_Info :: struct {
     name: string;
     path: string; // This should be just what the user has passed to us via -l, I think
     is_system: bool;
-
-    static_path: string;
-    static_depends_on_libs: [..]string;
-
     #if OS == .WINDOWS {
         handle: HMODULE;
     } else #if OS == .LINUX || OS == .MACOS {
@@ -887,9 +884,11 @@ create_variable_declaration :: (cur: CXCursor, parent: CXCursor, parent_func: *F
     kind := clang_getCursorKind(cur);
     assert(kind == CXCursor_ParmDecl || kind == CXCursor_VarDecl || kind == CXCursor_FieldDecl || kind == CXCursor_ObjCIvarDecl);
 
-    decl_type := create_type(clang_getCursorType(cur), cur);
+    cur_type := clang_getCursorType(cur);
+    decl_type := create_type(cur_type, cur);
     decl := _create_declaration(copy_and_dispose(clang_getCursorSpelling(cur)), decl_type);
     decl.bitfield_width = clang_getFieldDeclBitWidth(cur);
+    if clang_isConstQualifiedType(cur_type) decl.decl_flags |= .Is_Const; // TODO: should this flag be on the type instead?
 
     children := get_children(cur);
 
@@ -1910,7 +1909,10 @@ print_declaration_to_builder :: (builder: *String_Builder, decl: *Declaration, f
         print_to_builder(builder, "%: %", decl_name, type_str);
 
         if !(flags & .No_Argument_Defaults) && decl.expression {
-            append(builder, " = ");
+            if decl.decl_flags & .Is_Const
+                append(builder, " : ");
+            else
+                append(builder, " = ");
 
             temp_builder: String_Builder;
             temp_builder.allocator = __temporary_allocator;

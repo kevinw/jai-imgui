@@ -24,11 +24,19 @@ TreeNode :: (fmt: string, args: ..Any) -> bool {
     return TreeNode(txt.data);
 }
 
-IM_COL32_R_SHIFT  ::  0;
-IM_COL32_G_SHIFT  ::  8;
-IM_COL32_B_SHIFT  ::  16;
-IM_COL32_A_SHIFT  ::  24;
-IM_COL32_A_MASK   ::  0xFF000000;
+#if Preprocessor_Defines.USE_BGRA_PACKED_COLOR {
+    IM_COL32_R_SHIFT :: 16;
+    IM_COL32_G_SHIFT :: 8;
+    IM_COL32_B_SHIFT :: 0;
+    IM_COL32_A_SHIFT :: 24;
+    IM_COL32_A_MASK  :: 0xFF000000;
+} else {
+    IM_COL32_R_SHIFT  ::  0;
+    IM_COL32_G_SHIFT  ::  8;
+    IM_COL32_B_SHIFT  ::  16;
+    IM_COL32_A_SHIFT  ::  24;
+    IM_COL32_A_MASK   ::  0xFF000000;
+}
 // This is a C preprocessor macro, should it be a Jai macro?
 make_col32 :: (R : u32, G: u32, B: u32, A: u32) -> u32 {
     return cast(u32)((A<<IM_COL32_A_SHIFT) | (B<<IM_COL32_B_SHIFT) | 
@@ -2313,4 +2321,8 @@ PlatformMonitor :: struct {
     DpiScale: float;
 }
 // #run check_size(PlatformMonitor, 36);
+
+Preprocessor_Defines :: struct {
+    USE_BGRA_PACKED_COLOR: bool : true;
+}
 
