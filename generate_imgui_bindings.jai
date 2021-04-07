@@ -192,6 +192,10 @@ make_ImVec2 :: inline (a: float, b: float) -> ImVec2 {
     return v;
 }
 
+operator + :: inline (a: ImVec2, b: ImVec2) -> ImVec2 {
+    return make_ImVec2(a.x + b.x, a.y + b.y);
+}
+
 TreeNode :: (fmt: string, args: ..Any) -> bool {
     fmt_z := tprint("%\0", fmt);
     txt := tprint(fmt_z, ..args);
