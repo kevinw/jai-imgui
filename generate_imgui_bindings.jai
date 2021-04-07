@@ -6,7 +6,7 @@
     opts.output_type = .NO_OUTPUT;
     set_build_options(opts);
 
-    #load "jaicpp/jaicpp.jai";
+    #load "../eng/lib/jaicc/jaicc.jai";
     generate_imgui_bindings();
 }();
 
@@ -16,17 +16,20 @@ generate_imgui_bindings :: () {
     opts: Generate_Bindings_Options;
     {
         using opts;
-        preamble = imgui_preamble;
         array_add(*libpaths,      "./win/dll");
         array_add(*libnames,      "imgui");
         array_add(*include_paths, "./imgui");
         array_add(*source_files,  "./jai-imgui.cpp");
         array_add(*flatten_namespaces, "ImGui");
-        strip_prefix = "ImGui";
+        strip_prefix             = "ImGui";
         omit_global_declarations = true;
-        output_filename = "imgui.jai";
-        user_data = *imgui_data;
+        output_filename          = "imgui.jai";
+        user_data                = *imgui_data;
+        preamble                 = imgui_preamble;
+        print_foreign_library_declarations = false;
         will_print_bindings = () {
+            // we'll also walk all the declarations recursively, making some
+            // changes. see imgui_visitor below.
             for context.compiler.global_scope.members
                 visit_declarations(imgui_visitor, it);
         };
@@ -172,6 +175,15 @@ imgui_get_function_arg_for_printing :: (func: *Function, mode: Arg_Print_Mode) -
 
 // Extra Jai code for the bindings
 imgui_preamble := #string END
+
+#module_parameters(LINK_STATIC := false);
+
+#if LINK_STATIC {
+    user32 :: #foreign_system_library "user32";
+    imgui :: #foreign_library,no_dll "./win/static/imgui";
+} else {
+    imgui :: #foreign_library "./win/dll/imgui";
+}
 
 make_ImVec2 :: inline (a: float, b: float) -> ImVec2 {
     v: ImVec2 = ---;

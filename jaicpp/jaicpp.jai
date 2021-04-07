@@ -1,12 +1,13 @@
 //
 // Generates Jai wrappers for C++ headers.
 //
+// Based on the original "jaicc" code by Josh Huelsman.
+//
 
-// a TODO for those of your feeling entrepreneurial: this could probably just
-// leverage the built-in Program_Print/Compiler modules now, and generate
-// things with a tree of Code_Nodes. That would make the entire set of
-// Declaration/Struct/Typedef/etc structs obsolete, and all of this
-// shorter/more future-proof.
+// TODO: this could probably just leverage the built-in Program_Print/Compiler
+// modules now, and generate things with a tree of Code_Nodes. That would make
+// the entire set of Declaration/Struct/Typedef/etc structs obsolete, and all
+// of this shorter/more future-proof.
 
 #load "generated_clang.jai";
 #import "Basic";
