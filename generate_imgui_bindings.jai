@@ -1,15 +1,14 @@
 #import "Basic";
 #import "Compiler";
 
-//#run () {
-    //opts := get_build_options();
-//    opts.output_type = .NO_OUTPUT;
-    //set_build_options(opts);
+#run () {
+    opts := get_build_options();
+    opts.output_type = .NO_OUTPUT;
+    set_build_options(opts);
 
-main :: () {
     #load "jaicpp/jaicpp.jai";
     generate_imgui_bindings();
-}
+}();
 
 generate_imgui_bindings :: () {
     imgui_data: ImGui_Bindings_Gen_Data;
