@@ -1,14 +1,15 @@
 #import "Basic";
 #import "Compiler";
 
-#run () {
-    opts := get_build_options();
-    opts.output_type = .NO_OUTPUT;
-    set_build_options(opts);
+//#run () {
+    //opts := get_build_options();
+//    opts.output_type = .NO_OUTPUT;
+    //set_build_options(opts);
 
+main :: () {
     #load "jaicpp/jaicpp.jai";
     generate_imgui_bindings();
-}();
+}
 
 generate_imgui_bindings :: () {
     imgui_data: ImGui_Bindings_Gen_Data;
@@ -16,8 +17,20 @@ generate_imgui_bindings :: () {
     opts: Generate_Bindings_Options;
     {
         using opts;
-        array_add(*libpaths,      "./win/dll");
         array_add(*libnames,      "imgui");
+        #if OS == .WINDOWS {
+            array_add(*libpaths,      "./win/dll");
+        }
+        #if OS == .LINUX {
+            array_add(*libpaths,      "./linux");
+            array_add(*include_paths, "/usr/include/c++/10");
+            array_add(*include_paths, "/usr/include/x86_64-linux-gnu/c++/10");
+            array_add(*include_paths, "/usr/include/c++/10/backward");
+            array_add(*include_paths, "/usr/local/include");
+            array_add(*include_paths, "/usr/lib/llvm-12/lib/clang/12.0.0/include");
+            array_add(*include_paths, "/usr/include/x86_64-linux-gnu");
+            array_add(*include_paths, "/usr/include");
+        }
         array_add(*include_paths, "./imgui");
         array_add(*source_files,  "./jai-imgui.cpp");
         array_add(*flatten_namespaces, "ImGui");
@@ -178,11 +191,20 @@ imgui_preamble := #string END
 
 #module_parameters(LINK_STATIC := false);
 
-#if LINK_STATIC {
-    user32 :: #foreign_system_library "user32";
-    imgui :: #foreign_library,no_dll "./win/static/imgui";
-} else {
-    imgui :: #foreign_library "./win/dll/imgui";
+#if OS == .WINDOWS {
+    #if LINK_STATIC {
+        user32 :: #foreign_system_library "user32";
+        imgui :: #foreign_library,no_dll "./win/static/imgui";
+    } else {
+        imgui :: #foreign_library "./win/dll/imgui";
+    }
+}
+#if OS == .LINUX {
+    #if LINK_STATIC {
+        imgui :: #foreign_library,no_dll "./linux/static/imgui";
+    } else {
+        imgui :: #foreign_library "./linux/imgui";
+    }
 }
 
 make_ImVec2 :: inline (a: float, b: float) -> ImVec2 {
