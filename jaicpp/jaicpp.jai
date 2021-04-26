@@ -2384,10 +2384,10 @@ os_load_library_helper :: (paths_in: [] string, name: string) -> type_of(Library
     for paths {
         tpath := concatenate(it, PATH_SEPARATOR_STRING, name, "\0");
         print("full path: %\n", tpath);
-        wide_path_data, success, w_len := utf8_to_wide(tpath);
-        assert(success);
 
         #if OS == .WINDOWS {
+            wide_path_data, success, w_len := utf8_to_wide(tpath);
+            assert(success);
             buffer: [MAX_PATH] u16;
             length := GetFullPathNameW(wide_path_data, buffer.count, xx buffer.data, null);
             free(tpath);
@@ -2560,8 +2560,9 @@ generate_bindings :: (opts: Generate_Bindings_Options) -> (has_error: bool) {
         has_error = true;
     }
 
+    print("Got % diags from %.\n", clang_getNumDiagnostics(tu), <<tu);
     for 1..clang_getNumDiagnostics(tu) {
-        diag := clang_getDiagnostic(tu, it - 1);
+        diag := clang_getDiagnostic(tu, it-1);
 
         severity := clang_getDiagnosticSeverity(diag);
         if severity == .CXDiagnostic_Error || severity == .CXDiagnostic_Fatal {
@@ -2621,6 +2622,8 @@ END);
         print("printing % global scope members...\n", context.compiler.global_scope.members.count);
         for context.compiler.global_scope.members {
             if it.decl_flags & .Omit_From_Output continue;
+            // Msg to @keelo: Not sure where exactly to do this cleanly:
+            if it.name == "va_list" || it.name == "__gnuc_va_list" continue;
             print_declaration_to_builder(*builder, it, flags=.Is_Global);
             append(*builder, "\n\n");
         }
