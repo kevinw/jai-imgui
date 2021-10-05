@@ -87,21 +87,9 @@ NavInput :: s32;
 
 ImTextureID :: *void;
 
+ImDrawIdx :: u16;
+
 ID :: u32;
-
-InputTextCallback :: #type (a0: *InputTextCallbackData) -> s32 #c_call;
-
-SizeCallback :: #type (a0: *SizeCallbackData) -> void #c_call;
-
-MemAllocFunc :: #type (a0: size_t, a1: *void) -> *void #c_call;
-
-MemFreeFunc :: #type (a0: *void, a1: *void) -> void #c_call;
-
-ImWchar16 :: u16;
-
-ImWchar32 :: u32;
-
-ImWchar :: ImWchar16;
 
 ImS8 :: s8;
 
@@ -118,6 +106,20 @@ ImU32 :: u32;
 ImS64 :: s64;
 
 ImU64 :: u64;
+
+ImWchar16 :: u16;
+
+ImWchar32 :: u32;
+
+ImWchar :: ImWchar16;
+
+InputTextCallback :: #type (a0: *InputTextCallbackData) -> s32 #c_call;
+
+SizeCallback :: #type (a0: *SizeCallbackData) -> void #c_call;
+
+MemAllocFunc :: #type (a0: size_t, a1: *void) -> *void #c_call;
+
+MemFreeFunc :: #type (a0: *void, a1: *void) -> void #c_call;
 
 ImVec2 :: struct {
     x: float;
@@ -232,7 +234,6 @@ ImVec4 :: struct {
     GetContentRegionMax :: () -> ImVec2 #cpp_return_type_is_non_pod #foreign imgui "?GetContentRegionMax@ImGui@@YA?AUImVec2@@XZ";
     GetWindowContentRegionMin :: () -> ImVec2 #cpp_return_type_is_non_pod #foreign imgui "?GetWindowContentRegionMin@ImGui@@YA?AUImVec2@@XZ";
     GetWindowContentRegionMax :: () -> ImVec2 #cpp_return_type_is_non_pod #foreign imgui "?GetWindowContentRegionMax@ImGui@@YA?AUImVec2@@XZ";
-    GetWindowContentRegionWidth :: () -> float #foreign imgui "?GetWindowContentRegionWidth@ImGui@@YAMXZ";
     GetScrollX :: () -> float #foreign imgui "?GetScrollX@ImGui@@YAMXZ";
     GetScrollY :: () -> float #foreign imgui "?GetScrollY@ImGui@@YAMXZ";
     SetScrollX :: (scroll_x: float) -> void #foreign imgui "?SetScrollX@ImGui@@YAXM@Z";
@@ -528,6 +529,7 @@ ImVec4 :: struct {
     BeginPopupModal :: (name: *u8, p_open: *bool = null, flags: WindowFlags = .None) -> bool #foreign imgui "?BeginPopupModal@ImGui@@YA_NPEBDPEA_NH@Z";
     EndPopup :: () -> void #foreign imgui "?EndPopup@ImGui@@YAXXZ";
     OpenPopup :: (str_id: *u8, popup_flags: PopupFlags = .None) -> void #foreign imgui "?OpenPopup@ImGui@@YAXPEBDH@Z";
+    OpenPopup :: (id: ID, popup_flags: PopupFlags = .None) -> void #foreign imgui "?OpenPopup@ImGui@@YAXIH@Z";
     OpenPopupOnItemClick :: (str_id: *u8 = null, popup_flags: PopupFlags = .MouseButtonRight) -> void #foreign imgui "?OpenPopupOnItemClick@ImGui@@YAXPEBDH@Z";
     CloseCurrentPopup :: () -> void #foreign imgui "?CloseCurrentPopup@ImGui@@YAXXZ";
     BeginPopupContextItem :: (str_id: *u8 = null, popup_flags: PopupFlags = .MouseButtonRight) -> bool #foreign imgui "?BeginPopupContextItem@ImGui@@YA_NPEBDH@Z";
@@ -594,6 +596,8 @@ ImVec4 :: struct {
     AcceptDragDropPayload :: (type: *u8, flags: DragDropFlags = .None) -> *Payload #foreign imgui "?AcceptDragDropPayload@ImGui@@YAPEBUImGuiPayload@@PEBDH@Z";
     EndDragDropTarget :: () -> void #foreign imgui "?EndDragDropTarget@ImGui@@YAXXZ";
     GetDragDropPayload :: () -> *Payload #foreign imgui "?GetDragDropPayload@ImGui@@YAPEBUImGuiPayload@@XZ";
+    BeginDisabled :: (disabled: bool = true) -> void #foreign imgui "?BeginDisabled@ImGui@@YAX_N@Z";
+    EndDisabled :: () -> void #foreign imgui "?EndDisabled@ImGui@@YAXXZ";
     PushClipRect :: (clip_rect_min: ImVec2, clip_rect_max: ImVec2, intersect_with_current_clip_rect: bool) {
         PushClipRect_internal :: (clip_rect_min: *ImVec2, clip_rect_max: *ImVec2, intersect_with_current_clip_rect: bool) -> void #foreign imgui "?PushClipRect@ImGui@@YAXAEBUImVec2@@0_N@Z";
         PushClipRect_internal(*clip_rect_min, *clip_rect_max, intersect_with_current_clip_rect);
@@ -754,8 +758,6 @@ InputTextFlags :: enum s32 {
     CharsScientific :: 131072;
     CallbackResize :: 262144;
     CallbackEdit :: 524288;
-    Multiline :: 1048576;
-    NoMarkEdited :: 2097152;
 }
 
 TreeNodeFlags :: enum s32 {
@@ -879,29 +881,31 @@ TableFlags :: enum s32 {
 
 TableColumnFlags :: enum s32 {
     None :: 0;
-    DefaultHide :: 1;
-    DefaultSort :: 2;
-    WidthStretch :: 4;
-    WidthFixed :: 8;
-    NoResize :: 16;
-    NoReorder :: 32;
-    NoHide :: 64;
-    NoClip :: 128;
-    NoSort :: 256;
-    NoSortAscending :: 512;
-    NoSortDescending :: 1024;
-    NoHeaderWidth :: 2048;
-    PreferSortAscending :: 4096;
-    PreferSortDescending :: 8192;
-    IndentEnable :: 16384;
-    IndentDisable :: 32768;
-    IsEnabled :: 1048576;
-    IsVisible :: 2097152;
-    IsSorted :: 4194304;
-    IsHovered :: 8388608;
-    WidthMask_ :: 12;
-    IndentMask_ :: 49152;
-    StatusMask_ :: 15728640;
+    Disabled :: 1;
+    DefaultHide :: 2;
+    DefaultSort :: 4;
+    WidthStretch :: 8;
+    WidthFixed :: 16;
+    NoResize :: 32;
+    NoReorder :: 64;
+    NoHide :: 128;
+    NoClip :: 256;
+    NoSort :: 512;
+    NoSortAscending :: 1024;
+    NoSortDescending :: 2048;
+    NoHeaderLabel :: 4096;
+    NoHeaderWidth :: 8192;
+    PreferSortAscending :: 16384;
+    PreferSortDescending :: 32768;
+    IndentEnable :: 65536;
+    IndentDisable :: 131072;
+    IsEnabled :: 16777216;
+    IsVisible :: 33554432;
+    IsSorted :: 67108864;
+    IsHovered :: 134217728;
+    WidthMask_ :: 24;
+    IndentMask_ :: 196608;
+    StatusMask_ :: 251658240;
     NoDirectResize_ :: 1073741824;
 }
 
@@ -922,6 +926,8 @@ FocusedFlags :: enum s32 {
     ChildWindows :: 1;
     RootWindow :: 2;
     AnyWindow :: 4;
+    NoPopupHierarchy :: 8;
+    DockHierarchy :: 16;
     RootAndChildWindows :: 3;
 }
 
@@ -930,11 +936,13 @@ HoveredFlags :: enum s32 {
     ChildWindows :: 1;
     RootWindow :: 2;
     AnyWindow :: 4;
-    AllowWhenBlockedByPopup :: 8;
-    AllowWhenBlockedByActiveItem :: 32;
-    AllowWhenOverlapped :: 64;
-    AllowWhenDisabled :: 128;
-    RectOnly :: 104;
+    NoPopupHierarchy :: 8;
+    DockHierarchy :: 16;
+    AllowWhenBlockedByPopup :: 32;
+    AllowWhenBlockedByActiveItem :: 128;
+    AllowWhenOverlapped :: 256;
+    AllowWhenDisabled :: 512;
+    RectOnly :: 416;
     RootAndChildWindows :: 3;
 }
 
@@ -1042,12 +1050,11 @@ NavInput_ :: enum s32 {
     FocusNext :: 13;
     TweakSlow :: 14;
     TweakFast :: 15;
-    KeyMenu_ :: 16;
-    KeyLeft_ :: 17;
-    KeyRight_ :: 18;
-    KeyUp_ :: 19;
-    KeyDown_ :: 20;
-    COUNT :: 21;
+    KeyLeft_ :: 16;
+    KeyRight_ :: 17;
+    KeyUp_ :: 18;
+    KeyDown_ :: 19;
+    COUNT :: 20;
     InternalStart_ :: 16;
 }
 
@@ -1139,30 +1146,31 @@ Col :: enum s32 {
 
 StyleVar :: enum s32 {
     Alpha :: 0;
-    WindowPadding :: 1;
-    WindowRounding :: 2;
-    WindowBorderSize :: 3;
-    WindowMinSize :: 4;
-    WindowTitleAlign :: 5;
-    ChildRounding :: 6;
-    ChildBorderSize :: 7;
-    PopupRounding :: 8;
-    PopupBorderSize :: 9;
-    FramePadding :: 10;
-    FrameRounding :: 11;
-    FrameBorderSize :: 12;
-    ItemSpacing :: 13;
-    ItemInnerSpacing :: 14;
-    IndentSpacing :: 15;
-    CellPadding :: 16;
-    ScrollbarSize :: 17;
-    ScrollbarRounding :: 18;
-    GrabMinSize :: 19;
-    GrabRounding :: 20;
-    TabRounding :: 21;
-    ButtonTextAlign :: 22;
-    SelectableTextAlign :: 23;
-    COUNT :: 24;
+    DisabledAlpha :: 1;
+    WindowPadding :: 2;
+    WindowRounding :: 3;
+    WindowBorderSize :: 4;
+    WindowMinSize :: 5;
+    WindowTitleAlign :: 6;
+    ChildRounding :: 7;
+    ChildBorderSize :: 8;
+    PopupRounding :: 9;
+    PopupBorderSize :: 10;
+    FramePadding :: 11;
+    FrameRounding :: 12;
+    FrameBorderSize :: 13;
+    ItemSpacing :: 14;
+    ItemInnerSpacing :: 15;
+    IndentSpacing :: 16;
+    CellPadding :: 17;
+    ScrollbarSize :: 18;
+    ScrollbarRounding :: 19;
+    GrabMinSize :: 20;
+    GrabRounding :: 21;
+    TabRounding :: 22;
+    ButtonTextAlign :: 23;
+    SelectableTextAlign :: 24;
+    COUNT :: 25;
 }
 
 ButtonFlags :: enum s32 {
@@ -1199,11 +1207,11 @@ ColorEditFlags :: enum s32 {
     PickerHueWheel :: 67108864;
     InputRGB :: 134217728;
     InputHSV :: 268435456;
-    OptionsDefault :: 177209344;
-    DisplayMask :: 7340032;
-    DataTypeMask :: 25165824;
-    PickerMask :: 100663296;
-    InputMask :: 402653184;
+    DefaultOptions_ :: 177209344;
+    DisplayMask_ :: 7340032;
+    DataTypeMask_ :: 25165824;
+    PickerMask_ :: 100663296;
+    InputMask_ :: 402653184;
 }
 
 SliderFlags :: enum s32 {
@@ -1272,6 +1280,7 @@ ImVector :: struct(T: Type) {
 
 Style :: struct {
     Alpha: float;
+    DisabledAlpha: float;
     WindowPadding: ImVec2;
     WindowRounding: float;
     WindowBorderSize: float;
@@ -1313,7 +1322,7 @@ Style :: struct {
     Colors: [55] ImVec4;
     ScaleAllSizes :: (this: *Style, scale_factor: float) -> void #cpp_method #foreign imgui "?ScaleAllSizes@ImGuiStyle@@QEAAXM@Z";
 }
-// #run check_size(Style, 1076);
+// #run check_size(Style, 1080);
 
 IO :: struct {
     ConfigFlags_: ConfigFlags;
@@ -1367,11 +1376,13 @@ IO :: struct {
     KeyAlt: bool;
     KeySuper: bool;
     KeysDown: [512] bool;
-    NavInputs: [21] float;
+    NavInputs: [20] float;
     AddInputCharacter :: (this: *IO, c: u32) -> void #cpp_method #foreign imgui "?AddInputCharacter@ImGuiIO@@QEAAXI@Z";
     AddInputCharacterUTF16 :: (this: *IO, c: ImWchar16) -> void #cpp_method #foreign imgui "?AddInputCharacterUTF16@ImGuiIO@@QEAAXG@Z";
     AddInputCharactersUTF8 :: (this: *IO, str: *u8) -> void #cpp_method #foreign imgui "?AddInputCharactersUTF8@ImGuiIO@@QEAAXPEBD@Z";
+    AddFocusEvent :: (this: *IO, focused: bool) -> void #cpp_method #foreign imgui "?AddFocusEvent@ImGuiIO@@QEAAX_N@Z";
     ClearInputCharacters :: (this: *IO) -> void #cpp_method #foreign imgui "?ClearInputCharacters@ImGuiIO@@QEAAXXZ";
+    ClearInputKeys :: (this: *IO) -> void #cpp_method #foreign imgui "?ClearInputKeys@ImGuiIO@@QEAAXXZ";
     WantCaptureMouse: bool;
     WantCaptureKeyboard: bool;
     WantTextInput: bool;
@@ -1386,7 +1397,9 @@ IO :: struct {
     MetricsActiveWindows: s32;
     MetricsActiveAllocations: s32;
     MouseDelta: ImVec2;
+    WantCaptureMouseUnlessPopupClose: bool;
     KeyMods: KeyModFlags;
+    KeyModsPrev: KeyModFlags;
     MousePosPrev: ImVec2;
     MouseClickedPos: [5] ImVec2;
     MouseClickedTime: [5] float64;
@@ -1394,6 +1407,7 @@ IO :: struct {
     MouseDoubleClicked: [5] bool;
     MouseReleased: [5] bool;
     MouseDownOwned: [5] bool;
+    MouseDownOwnedUnlessPopupClose: [5] bool;
     MouseDownWasDoubleClick: [5] bool;
     MouseDownDuration: [5] float;
     MouseDownDurationPrev: [5] float;
@@ -1401,13 +1415,14 @@ IO :: struct {
     MouseDragMaxDistanceSqr: [5] float;
     KeysDownDuration: [512] float;
     KeysDownDurationPrev: [512] float;
-    NavInputsDownDuration: [21] float;
-    NavInputsDownDurationPrev: [21] float;
+    NavInputsDownDuration: [20] float;
+    NavInputsDownDurationPrev: [20] float;
     PenPressure: float;
+    AppFocusLost: bool;
     InputQueueSurrogate: ImWchar16;
     InputQueueCharacters: ImVector(u16);
 }
-// #run check_size(IO, 5456);
+// #run check_size(IO, 5464);
 
 InputTextCallbackData :: struct {
     EventFlag: InputTextFlags;
@@ -1460,11 +1475,10 @@ WindowClass :: struct {
     ViewportFlagsOverrideClear: ViewportFlags;
     TabItemFlagsOverrideSet: TabItemFlags;
     DockNodeFlagsOverrideSet: DockNodeFlags;
-    DockNodeFlagsOverrideClear: DockNodeFlags;
     DockingAlwaysTabBar: bool;
     DockingAllowUnclassed: bool;
 }
-// #run check_size(WindowClass, 32);
+// #run check_size(WindowClass, 28);
 
 Payload :: struct {
     Data: *void;
@@ -1677,10 +1691,13 @@ ImDrawCmd :: struct {
     ElemCount: u32;
     UserCallback: ImDrawCallback;
     UserCallbackData: *void;
+    /* (jaicc: omitted inline function)
+    GetTexID :: (this: *ImDrawCmd) -> ImTextureID #cpp_method {
+    }
+    */
+
 }
 // #run check_size(ImDrawCmd, 56);
-
-ImDrawIdx :: u16;
 
 ImDrawVert :: struct {
     pos: ImVec2;
@@ -1969,6 +1986,7 @@ ImDrawList :: struct {
     _ResetForNewFrame :: (this: *ImDrawList) -> void #cpp_method #foreign imgui "?_ResetForNewFrame@ImDrawList@@QEAAXXZ";
     _ClearFreeMemory :: (this: *ImDrawList) -> void #cpp_method #foreign imgui "?_ClearFreeMemory@ImDrawList@@QEAAXXZ";
     _PopUnusedDrawCmd :: (this: *ImDrawList) -> void #cpp_method #foreign imgui "?_PopUnusedDrawCmd@ImDrawList@@QEAAXXZ";
+    _TryMergeDrawCmds :: (this: *ImDrawList) -> void #cpp_method #foreign imgui "?_TryMergeDrawCmds@ImDrawList@@QEAAXXZ";
     _OnChangedClipRect :: (this: *ImDrawList) -> void #cpp_method #foreign imgui "?_OnChangedClipRect@ImDrawList@@QEAAXXZ";
     _OnChangedTextureID :: (this: *ImDrawList) -> void #cpp_method #foreign imgui "?_OnChangedTextureID@ImDrawList@@QEAAXXZ";
     _OnChangedVtxOffset :: (this: *ImDrawList) -> void #cpp_method #foreign imgui "?_OnChangedVtxOffset@ImDrawList@@QEAAXXZ";
@@ -2154,6 +2172,7 @@ ImFontAtlas :: struct {
     TexDesiredWidth: s32;
     TexGlyphPadding: s32;
     Locked: bool;
+    TexReady: bool;
     TexPixelsUseColors: bool;
     TexPixelsAlpha8: *u8;
     TexPixelsRGBA32: *u32;
@@ -2184,6 +2203,7 @@ ImFont :: struct {
     ConfigDataCount: s16;
     FallbackChar: ImWchar;
     EllipsisChar: ImWchar;
+    DotChar: ImWchar;
     DirtyLookupTables: bool;
     Scale: float;
     Ascent: float;
@@ -2230,7 +2250,6 @@ ImFont :: struct {
     AddGlyph :: (this: *ImFont, src_cfg: *ImFontConfig, c: ImWchar, x0: float, y0: float, x1: float, y1: float, u0: float, v0: float, u1: float, v1: float, advance_x: float) -> void #cpp_method #foreign imgui "?AddGlyph@ImFont@@QEAAXPEBUImFontConfig@@GMMMMMMMMM@Z";
     AddRemapChar :: (this: *ImFont, dst: ImWchar, src: ImWchar, overwrite_dst: bool = true) -> void #cpp_method #foreign imgui "?AddRemapChar@ImFont@@QEAAXGG_N@Z";
     SetGlyphVisible :: (this: *ImFont, c: ImWchar, visible: bool) -> void #cpp_method #foreign imgui "?SetGlyphVisible@ImFont@@QEAAXG_N@Z";
-    SetFallbackChar :: (this: *ImFont, c: ImWchar) -> void #cpp_method #foreign imgui "?SetFallbackChar@ImFont@@QEAAXG@Z";
     IsGlyphRangeUnused :: (this: *ImFont, c_begin: u32, c_last: u32) -> bool #cpp_method #foreign imgui "?IsGlyphRangeUnused@ImFont@@QEAA_NII@Z";
 }
 // #run check_size(ImFont, 112);
