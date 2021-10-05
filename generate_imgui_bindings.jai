@@ -4,7 +4,7 @@
 #run () {
     opts := get_build_options();
     opts.output_type = .NO_OUTPUT;
-    set_build_options(opts);
+    set_build_options_dc(.{do_output=false});
 
     #load "jaicpp/jaicpp.jai";
     generate_imgui_bindings();

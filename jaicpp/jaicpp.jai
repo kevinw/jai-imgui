@@ -328,8 +328,8 @@ create_dummy_string_type :: (cur: CXType, array_count: int) -> *CType {
     orig := copy_string(s);
 
     while array_count > 0 {
-        right_idx := last_index_of_char(s, #char "]");
-        left_idx := last_index_of_char(s, #char "[");
+        right_idx := find_index_from_right(s, #char "]");
+        left_idx := find_index_from_right(s, #char "[");
         if left_idx != -1 && right_idx != -1 && left_idx < right_idx {
             s = slice(s, 0, left_idx - 1);
             array_count -= 1;
@@ -346,7 +346,7 @@ create_dummy_string_type :: (cur: CXType, array_count: int) -> *CType {
         in = replace(in, "char",          "s8");
 
         while true {
-            namespace_idx := index_of_string(in, "::");
+            namespace_idx := find_index_from_left(in, "::");
             if namespace_idx == -1 break;
 
             in = tprint("%.%", 
@@ -354,8 +354,8 @@ create_dummy_string_type :: (cur: CXType, array_count: int) -> *CType {
                 handle(slice(in, namespace_idx + 2, 10000)));
         }
         
-        _, found := find_last(in, " *");
-        if found {
+        found_index := find_index_from_right(in, " *");
+        if found_index != -1 {
             in = tprint("*%", stripped_name(slice(in, 0, in.count - 2)));
         } else {
             in = stripped_name(in);
@@ -363,8 +363,8 @@ create_dummy_string_type :: (cur: CXType, array_count: int) -> *CType {
         return in;
     }
 
-    left_idx  := index_of_char(s, #char "<");
-    right_idx := last_index_of_char(s, #char ">");
+    left_idx  := find_index_from_right(s, #char "<");
+    right_idx := find_index_from_right(s, #char ">");
     while left_idx != -1 && right_idx != -1 {
         left_part   := slice(s, 0, left_idx);
         middle_part := slice(s, left_idx + 1, right_idx - left_idx - 1);
@@ -375,8 +375,8 @@ create_dummy_string_type :: (cur: CXType, array_count: int) -> *CType {
 
         new_s := handle(middle_part);
         s = handle(tprint("%1(%2)%3", left_part, new_s, right_part));
-        left_idx  = index_of_char(new_s, #char "<");
-        right_idx = last_index_of_char(new_s, #char ">");
+        left_idx  = find_index_from_right(new_s, #char "<");
+        right_idx = find_index_from_right(new_s, #char ">");
     }
 
     out.hardcoded_jai_string = s;
@@ -2382,7 +2382,7 @@ os_load_library_helper :: (paths_in: [] string, name: string) -> type_of(Library
     }
 
     for paths {
-        tpath := concatenate(it, PATH_SEPARATOR_STRING, name, "\0");
+        tpath := join(it, PATH_SEPARATOR_STRING, name, "\0");
         print("full path: %\n", tpath);
         wide_path_data, success, w_len := utf8_to_wide(tpath);
         assert(success);
@@ -2405,7 +2405,7 @@ os_load_library_helper :: (paths_in: [] string, name: string) -> type_of(Library
 }
 
 os_load_library :: (paths: [] string, name: string) -> type_of(Library_Info.handle), is_system: bool {
-    suf := concatenate(name, DLL_SUFFIX);
+    suf := join(name, DLL_SUFFIX);
     defer free(suf);
 
     handle := os_load_library_helper(paths, suf);
