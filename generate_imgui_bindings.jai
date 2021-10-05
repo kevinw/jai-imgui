@@ -176,7 +176,7 @@ imgui_get_function_arg_for_printing :: (func: *Function, mode: Arg_Print_Mode) -
 // Extra Jai code for the bindings
 imgui_preamble := #string END
 
-#module_parameters(LINK_STATIC := false);
+#module_parameters()(LINK_STATIC := false);
 
 #if LINK_STATIC {
     user32 :: #foreign_system_library "user32";
