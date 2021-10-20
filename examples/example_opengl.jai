@@ -2,6 +2,9 @@
 // A basic example showing the ImGui demo window using
 // Jai's Window_Creation module and OpenGL.
 //
+
+ImGui :: #import "imgui"()(LINK_STATIC=true);
+
 state: struct {
     ui: UI_State;
 

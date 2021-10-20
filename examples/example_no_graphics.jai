@@ -2,7 +2,7 @@
 // This is a non-graphical example program using the ImGui library from Jai.
 //
 
-ImGui :: #import "imgui"(LINK_STATIC=true);
+ImGui :: #import "imgui"()(LINK_STATIC=true);
 #import "Basic";
 
 c_alloc :: (sz: u64, userdata: *void) -> *void #c_call {

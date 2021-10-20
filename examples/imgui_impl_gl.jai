@@ -14,7 +14,6 @@
 Clipboard :: #import "Clipboard";
 Input :: #import "Input";
 
-ImGui :: #import "imgui"(LINK_STATIC=true);
 ImDrawIdx :: ImGui.ImDrawIdx;
 make_ImVec2 :: ImGui.make_ImVec2;
 
@@ -448,3 +447,7 @@ ImGui_Impl_NewFrame :: (ui_state: *UI_State, native_window_handle: *void, displa
     // Start the frame. This call will update the io.WantCaptureMouse, io.WantCaptureKeyboard flag that you can use to dispatch inputs (or not) to your application.
     ImGui.NewFrame();
 }
+
+#scope_file
+
+ImGui :: #import "imgui";
