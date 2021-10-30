@@ -4,8 +4,9 @@
 #run build();
 
 examples :: string.[
-    "example_no_graphics",
-    "example_opengl",
+    //"example_no_graphics",
+    //"example_opengl",
+    "example_d3d11",
 ];
 
 build_file :: (filename: string, output_executable_name: string) {

@@ -31,7 +31,6 @@ VERTEX_CONSTANT_BUFFER :: struct {
     mvp: [4][4]float;
 }
 
-
 ImGui_ImplDX11_SetupRenderState :: (using ui_state: *UI_State, draw_data: *ImDrawData) {
     d_ctx := ui_state.d3dDeviceContext;
 
@@ -87,9 +86,10 @@ ImGui_Impl_RenderDrawData :: (using ui_state: *UI_State, draw_data: *ImGui.ImDra
         };
         desc.ByteWidth = cast(u32)(VertexBufferSize * size_of(ImDrawVert));
         if d3dDevice.CreateBuffer(d3dDevice, *desc, null, *VB) < 0 {
-            logprint("imgui_d3d11", "Error creating the vertex buffer");
+            log("[imgui_d3d11] Error creating the vertex buffer");
             return false;
         }
+        set_debug_name(VB, "ImGui vertex buffer");
     }
 
     if !IB || IndexBufferSize < draw_data.TotalIdxCount {
@@ -102,9 +102,10 @@ ImGui_Impl_RenderDrawData :: (using ui_state: *UI_State, draw_data: *ImGui.ImDra
         };
         desc.ByteWidth = cast(u32)(IndexBufferSize * size_of(ImDrawIdx));
         if d3dDevice.CreateBuffer(d3dDevice, *desc, null, *IB) < 0 {
-            logprint("imgui_d3d11", "Error creating the index buffer");
+            log_error("failed creating index buffer");
             return false;
         }
+        set_debug_name(IB, "ImGui index buffer");
     }
 
     // Upload vertex/index data into a single contiguous GPU buffer
@@ -303,6 +304,8 @@ ImGui_ImplDX11_CreateFontsTexture :: (using ui_state: *UI_State) {
         subResource.SysMemPitch = desc.Width * 4;
         subResource.SysMemSlicePitch = 0;
         d3dDevice.CreateTexture2D(d3dDevice, *desc, *subResource, *pTexture);
+        if pTexture != null
+            set_debug_name(pTexture, "ImGui default font texture");
 
         // Create texture view
         srvDesc: D3D11_SHADER_RESOURCE_VIEW_DESC ;
@@ -311,6 +314,8 @@ ImGui_ImplDX11_CreateFontsTexture :: (using ui_state: *UI_State) {
         srvDesc.Texture2D.MipLevels = desc.MipLevels;
         srvDesc.Texture2D.MostDetailedMip = 0;
         d3dDevice.CreateShaderResourceView(d3dDevice, xx pTexture, *srvDesc, *FontTextureView);
+        if FontTextureView != null
+            set_debug_name(FontTextureView, "ImGui default font texture view");
         Release(pTexture);
     }
 
@@ -371,23 +376,18 @@ PS_INPUT main(VS_INPUT input)
 }
 END;
 
-#if GRAPHICS_LAYER_DEBUG {
         vertexShaderBlob: *ID3DBlob;
-        logprint("imgui_d3d11", "compiling imgui shader % (%)", "main", "vs_4_0");
+        log("[imgui_d3d11] compiling imgui shader % (%)", "main", "vs_4_0");
         if S_OK != D3DCompile(vertexShader.data, vertexShader.count, null, null, null, "main", "vs_4_0", 0, 0, *vertexShaderBlob, null)
             return false; // NB: Pass ID3DBlob* pErrorBlob to D3DCompile() to get error showing in (const char*)pErrorBlob->GetBufferPointer(). Make sure to Release() the blob!
         defer Release(vertexShaderBlob);
 
         blob_data := vertexShaderBlob.GetBufferPointer(vertexShaderBlob);
         blob_size := vertexShaderBlob.GetBufferSize(vertexShaderBlob);
-} else {
-        blob :: #run run_fxc_on_string(vertexShader, .Vertex, "vs_4_0", "main");
-        blob_data := blob.data;
-        blob_size := cast(u64)blob.count;
-}
 
         if d3dDevice.CreateVertexShader(d3dDevice, blob_data, blob_size, null, *VertexShader) != S_OK
             return false;
+        set_debug_name(VertexShader, "ImGui vertex shader");
 
         // TODO: detect #define IMGUI_USE_BGRA_PACKED_COLOR or not and use BGRA or RGBA as necessary...
         // the imgui bindings should probably have a constant for this.
@@ -400,6 +400,7 @@ END;
         ];
         if d3dDevice.CreateInputLayout(d3dDevice, local_layout.data, local_layout.count, blob_data, blob_size, *InputLayout) != S_OK
             return false;
+        set_debug_name(InputLayout, "ImGui input layout");
 
         // Create the constant buffer
         {
@@ -410,6 +411,7 @@ END;
                 ByteWidth      = size_of(VERTEX_CONSTANT_BUFFER),
             };
             d3dDevice.CreateBuffer(d3dDevice, *desc, null, *VertexConstantBuffer);
+            set_debug_name(VertexConstantBuffer, "ImGui vertex constant buffer");
         }
     }
 
@@ -432,22 +434,17 @@ float4 main(PS_INPUT input) : SV_Target
 }
 END;
 
-#if GRAPHICS_LAYER_DEBUG {
         pixelShaderBlob: *ID3DBlob;
-        logprint("imgui_d3d11", "compiling imgui shader % (%)", "main", "ps_4_0");
+        log("[imgui_d3d11] compiling imgui shader % (%)", "main", "ps_4_0");
         if D3DCompile(pixelShader.data, pixelShader.count, null, null, null, "main", "ps_4_0", 0, 0, *pixelShaderBlob, null) < 0
             return false; // NB: Pass ID3DBlob* pErrorBlob to D3DCompile() to get error showing in (const char*)pErrorBlob->GetBufferPointer(). Make sure to Release() the blob!
         defer Release(pixelShaderBlob);
         blob_data := pixelShaderBlob.GetBufferPointer(pixelShaderBlob);
         blob_size := pixelShaderBlob.GetBufferSize(pixelShaderBlob);
-} else {
-        blob :: #run run_fxc_on_string(pixelShader, .Fragment, "ps_4_0", "main");
-        blob_data := blob.data;
-        blob_size := cast(u64)blob.count;
-}
 
         if d3dDevice.CreatePixelShader(d3dDevice, blob_data, blob_size, null, *PixelShader) != S_OK
             return false;
+        set_debug_name(PixelShader, "ImGui fragment shader");
     }
 
     // Create the blending setup
@@ -515,10 +512,27 @@ ImGui_ImplDX11_InvalidateDeviceObjects :: (using ui_state: *UI_State) {
     Release_And_Set_Null(*VertexShader);
 }
 
+ImGui_Impl_Shutdown :: (ui_state: *UI_State) {
+    if ui_state.ctx == null
+        return;
+
+    ImGui.SetCurrentContext(ui_state.ctx);
+    ImGui_ImplDX11_InvalidateDeviceObjects(ui_state);
+    ImGui.DestroyContext(ui_state.ctx);
+    ui_state.ctx = null;
+}
+
 // Hopefully in the future it will be easier to provide custom WindowProc functionality
 // through Jai's windows impl.
 HHOOK :: HANDLE;
 HOOKPROC :: #type (code: s32, wparam: WPARAM, lparam: LPARAM) -> LRESULT #c_call;
+
+CWPSTRUCT :: struct {
+    lParam:  LPARAM;
+    wParam:  WPARAM;
+    message: u32;
+    hwnd:    HWND;
+}
 
 CWPRETSTRUCT :: struct {
     lResult: LRESULT;
@@ -533,38 +547,43 @@ CallNextHookEx      :: (hhk: HHOOK, code: s32, wparam: WPARAM, lparam: LPARAM) -
 SetWindowsHookExA   :: (id_hook: s32, hook_fn: HOOKPROC, hmod: HINSTANCE, thread_id: DWORD) -> HHOOK #foreign user32;
 UnhookWindowsHookEx :: (hhk: HHOOK) -> BOOL #foreign user32;
 
+WORD :: s16;
+
+LOWORD :: (l: LPARAM) -> WORD {
+    return cast(WORD)(l & 0xffff);
+}
+
+#program_export
 HookProc :: (code: s32, wparam: WPARAM, lparam: LPARAM) -> LRESULT #c_call {
     HTCLIENT :: 1;
-    TRUE :: 1;
+    TRUE     :: 1;
+
+    ctx: Context;
+    push_context ctx {
+    //print("HookProc(code=%, wparam=%, lparam=%)\n", code, wparam, lparam);
 
     if code >= 0 {
+        cwp := cast(*CWPSTRUCT)lparam;
 
-        if wparam == 0 {
-            cwp_ret := cast(*CWPRETSTRUCT)lparam;
-            if cast,trunc(u16)(cwp_ret.lParam) == HTCLIENT {
-                ImGui_ImplWin32_UpdateMouseCursor();
+        //print("cwp is %\n", formatStruct(cwp, use_newlines_if_long_form=true, use_long_form_if_more_than_this_many_members=0));
+
+        //print("cwp: %\n", get_win32_message_name(cwp.message));
+
+
+        if cwp.message == WM_SETCURSOR && LOWORD(cwp.lParam) == HTCLIENT {
+            ctx: Context;
+            //push_context ctx { print("received WM_SETCURSOR / HTCLIENT\n"); }
+            if ImGui_ImplWin32_UpdateMouseCursor() {
+                print("   NOT HOOKING NEXT\n");
                 return TRUE;
             }
         }
     }
 
+    }
+
     return CallNextHookEx(null, code, wparam, lparam);
 }
-
-setup_set_cursor_hook :: (using ui_state: *UI_State) {
-    WH_CALLWNDPROCRET :: 12;
-
-    // unhook a previous one
-    if hook != null
-        if 0 == cast(int)UnhookWindowsHookEx(hook)
-            print("Error in UnhookWindowsHookEx: %", GetLastError());
-
-    // hook up the new callback
-    hook = SetWindowsHookExA(WH_CALLWNDPROCRET, HookProc, null, GetCurrentThreadId());
-    if hook == null
-        print("SetWindowsHookExA error: %\n", GetLastError());
-}
-
 
 ImGui_Impl_Init :: (using ui_state: *UI_State, native_window_handle: *void) -> bool {
     // Setup backend capabilities flags
@@ -572,8 +591,6 @@ ImGui_Impl_Init :: (using ui_state: *UI_State, native_window_handle: *void) -> b
     io.BackendRendererName = "imgui_impl_dx11_jai";
     io.BackendFlags_ |= .RendererHasVtxOffset;  // We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
     io.BackendFlags_ |= .HasMouseCursors;       // We have mouse cursors
-
-    setup_set_cursor_hook(ui_state);
 
     // Get factory from device
     pDXGIDevice:   *IDXGIDevice;
@@ -598,13 +615,15 @@ ImGui_Impl_Init :: (using ui_state: *UI_State, native_window_handle: *void) -> b
     d3dDevice.AddRef(xx d3dDevice);
     d3dDeviceContext.AddRef(xx d3dDeviceContext);
 
+    //assert(_local_host_state.set_cursor_cb != null);
+    //_local_host_state.set_cursor_cb(Win32CursorCallback);
+
     return true;
 }
 
-ImGui_Impl_DidReloadDLL :: (ui_state: *UI_State) {
-    setup_set_cursor_hook(ui_state);
+Win32CursorCallback :: () -> bool #c_call {
+    return ImGui_ImplWin32_UpdateMouseCursor();
 }
-
 
 #if OS == .WINDOWS {
 
@@ -673,7 +692,8 @@ ImGui_ImplWin32_UpdateMouseCursor :: () -> bool #c_call {
     IDC_SIZENWSE :: 32642;
     IDC_SIZEWE   :: 32644;
 
-    SetCursor :: (hCursor: HCURSOR) -> HCURSOR #foreign user32;
+    //SetCursor :: (hCursor: HCURSOR) -> HCURSOR #foreign user32;
+    ctx: Context;
 
     io := ImGui.GetIO();
     if io.ConfigFlags_ & .NoMouseCursorChange
@@ -697,7 +717,12 @@ ImGui_ImplWin32_UpdateMouseCursor :: () -> bool #c_call {
             case .ResizeNWSE;   win32_cursor = IDC_SIZENWSE;
             case .Hand;         win32_cursor = IDC_HAND;
             case .NotAllowed;   win32_cursor = IDC_NO;
+            case; {
+                ctx: Context;
+                push_context ctx { log_error("unexpected imgui_cursor %", imgui_cursor); }
+            }
         }
+
         SetCursor(LoadCursorW(null, cast(*u8)win32_cursor));
     }
     return true;
@@ -733,10 +758,36 @@ offset_of :: ($T: Type, $member: string) -> s64 {
     DONE
 }
 
+set_debug_name :: (child_obj: *$T, name: string) {
+    if child_obj == null || name.data == null || name.count == 0
+        return;
+
+    WKPDID_D3DDebugObjectName :: GUID.{ 0x429b8c22,0x9188,0x4b0c, .[ 0x87,0x42,0xac,0xb0,0xbf,0x85,0xc2,0x00 ]};
+    child := cast(*ID3D11DeviceChild)child_obj;
+    assert(child.SetPrivateData != null);
+
+    // don't try to set if it already has a name (pooled objects like RasterizerState)
+    buf_size: u32 = 512;
+    buf := talloc(buf_size);
+    if S_OK == child.GetPrivateData(child, *WKPDID_D3DDebugObjectName, *buf_size, buf) && buf_size > 0
+        return; 
+
+    child.SetPrivateData(child, *WKPDID_D3DDebugObjectName, cast(u32)name.count, name.data);
+}
+
+//#import "win32_util";
+ImGui :: #import "imgui";
 #import "d3d11";
 #import "dxgi";
 #import "D3dcompiler";
 #import "Windows";
+#import "Basic";
+Debug :: #import "Debug";
 
 #import "d3d11_shader";
 S_OK :: 0;
+
+user32 :: #foreign_system_library "user32";
+GetCapture :: () -> HWND #foreign user32;
+SetCursor :: (hCursor: HCURSOR) -> HCURSOR #foreign user32;
+LoadCursorW :: (hInstance: HINSTANCE, lpCursorName: *void) -> HCURSOR #foreign user32;

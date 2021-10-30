@@ -111,7 +111,7 @@ get_window_size :: (window: Window_Type) -> s32, s32 {
 }
 
 #scope_file
-#import "imgui_impl_gl"; // note this #imports ImGui for us
+#import "imgui_impl_gl";
 
 #import "Window_Creation";
 #import "Input";
