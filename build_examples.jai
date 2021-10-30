@@ -3,12 +3,6 @@
 
 #run build();
 
-examples :: string.[
-    //"example_no_graphics",
-    //"example_opengl",
-    "example_d3d11",
-];
-
 build_file :: (filename: string, output_executable_name: string) {
     w := compiler_create_workspace("build");
     defer compiler_destroy_workspace(w);
@@ -42,6 +36,11 @@ build :: () {
     opts := get_build_options();
     opts.output_type = .NO_OUTPUT;
     set_build_options(opts);
+
+    examples: [..]string;
+    array_add(*examples, "example_no_graphics");
+    array_add(*examples, "example_opengl");
+    if OS == .WINDOWS { array_add(*examples, "example_d3d11"); }
 
     for examples
         build_file(tprint("examples/%.jai", it), output_executable_name=it);
