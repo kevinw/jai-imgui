@@ -1,9 +1,11 @@
 #import "Basic";
 #import "Compiler";
+Check :: #import "Check";
 
 #run build();
 
-build_file :: (filename: string, output_executable_name: string) {
+// Builds an executable from an example .jai file
+build_file :: (filename: string, output_executable_name: string) -> (success: bool) {
     w := compiler_create_workspace("build");
     defer compiler_destroy_workspace(w);
 
@@ -26,10 +28,16 @@ build_file :: (filename: string, output_executable_name: string) {
     while true {
         message := compiler_wait_for_message();
         if !message || message.workspace != w continue;
-        if message.kind == .COMPLETE break;
+        Check.do_error_checking(message, check_bindings=true);
+        if message.kind == .COMPLETE {
+            // Check for Message_Complete.error_code == .NONE to see if we succeeded.
+            message_complete := cast(*Message_Complete)message;
+            return message_complete.error_code == .NONE;
+        }
     }
 }
 
+// The main metaprogram for building jai-imgui examples.
 build :: () {
     set_working_directory(#filepath);
 
@@ -42,13 +50,19 @@ build :: () {
     array_add(*examples, "example_opengl");
     if OS == .WINDOWS { array_add(*examples, "example_d3d11"); }
 
-    for examples
-        build_file(tprint("examples/%.jai", it), output_executable_name=it);
+    all_succeeded := true;
+    for examples {
+        success := build_file(tprint("examples/%.jai", it), output_executable_name=it);
+        all_succeeded &= success;
+    }
+
     sleep_milliseconds(50); // so we don't interleave with jai complier's output...
 
-    print("\nSUCCESS! built:\n");
-    for examples
-        print("  %.exe\n", it);
+    if all_succeeded {
+        print("\nSUCCESS! built:\n");
+        for examples
+            print("  %.exe\n", it);
+    }
 
 }
 
