@@ -1,3 +1,8 @@
+# NOTE: This repository is very old, not updated for newer compilers. Please use the Jai compiler's ImGui or find updated bindings elsewhere!
+
+## `----------`
+
+
 # jai-imgui
 
 ### NOTE: Jai comes with a working ImGui module, but based on an older version of ImGui.
